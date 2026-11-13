@@ -1,0 +1,15 @@
+node_modules/
+.expo/
+dist/
+.env
+.env.*
+!.env.example
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+*.apk
+*.aab
+credentials.json
+*.jks
+*.keystore

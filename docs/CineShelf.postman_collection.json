@@ -1,0 +1,393 @@
+{
+  "info": {
+    "name": "CineShelf API",
+    "description": "CRUD katalog film/serial. Isi admin_api_key dari backend/.env milik sendiri. PUT/DELETE diarahkan ke ID hasil POST agar seed tidak terhapus.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5002/api"
+    },
+    {
+      "key": "admin_api_key",
+      "value": ""
+    },
+    {
+      "key": "created_movie_id",
+      "value": ""
+    },
+    {
+      "key": "created_series_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/health"
+      }
+    },
+    {
+      "name": "02 Beranda",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/home"
+      }
+    },
+    {
+      "name": "03 Genre",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/genres"
+      }
+    },
+    {
+      "name": "04 Film + pencarian + paginasi",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/movies?q=&genre=&page=1&limit=12"
+      }
+    },
+    {
+      "name": "05 Detail film",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/movies/f1"
+      }
+    },
+    {
+      "name": "06 Serial",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/series"
+      }
+    },
+    {
+      "name": "07 Detail serial",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/series/s1"
+      }
+    },
+    {
+      "name": "08 Resolve watchlist",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/catalog/resolve",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ids\": [\n    \"f1\",\n    \"s1\"\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "09 Tambah genre (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/genres",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Komedi\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_api_key}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "10 Tambah film (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/movies",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Film Baru\",\n  \"tagline\": \"Cerita baru untuk katalog.\",\n  \"genre\": \"Drama\",\n  \"year\": 2026,\n  \"rating\": 8.1,\n  \"age\": \"13+\",\n  \"duration\": \"1j 40m\",\n  \"image\": \"https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=900&q=80\",\n  \"color\": \"#49283b\",\n  \"cast\": \"Pemeran Contoh\",\n  \"director\": \"Sutradara Contoh\",\n  \"synopsis\": \"Film contoh untuk pengujian CRUD menggunakan Postman.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_api_key}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Created\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"created_movie_id\", pm.response.json().data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Ubah film baru (admin)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/movies/{{created_movie_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Film Baru Revisi\",\n  \"tagline\": \"Cerita baru untuk katalog.\",\n  \"genre\": \"Drama\",\n  \"year\": 2026,\n  \"rating\": 8.1,\n  \"age\": \"13+\",\n  \"duration\": \"1j 40m\",\n  \"image\": \"https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=900&q=80\",\n  \"color\": \"#49283b\",\n  \"cast\": \"Pemeran Contoh\",\n  \"director\": \"Sutradara Contoh\",\n  \"synopsis\": \"Film contoh untuk pengujian CRUD menggunakan Postman.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_api_key}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 Hapus film baru (admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/movies/{{created_movie_id}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_api_key}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "13 Tambah serial (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/series",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Serial Baru\",\n  \"tagline\": \"Cerita baru untuk katalog.\",\n  \"genre\": \"Drama\",\n  \"year\": 2026,\n  \"rating\": 8.1,\n  \"age\": \"13+\",\n  \"duration\": \"1 musim \\u00b7 6 episode\",\n  \"image\": \"https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=900&q=80\",\n  \"color\": \"#49283b\",\n  \"cast\": \"Pemeran Contoh\",\n  \"director\": \"Sutradara Contoh\",\n  \"synopsis\": \"Film contoh untuk pengujian CRUD menggunakan Postman.\",\n  \"episodes\": 6\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_api_key}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"created_series_id\", pm.response.json().data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Ubah serial baru (admin)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/series/{{created_series_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Serial Baru Revisi\",\n  \"tagline\": \"Cerita baru untuk katalog.\",\n  \"genre\": \"Drama\",\n  \"year\": 2026,\n  \"rating\": 8.1,\n  \"age\": \"13+\",\n  \"duration\": \"1 musim \\u00b7 8 episode\",\n  \"image\": \"https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=900&q=80\",\n  \"color\": \"#49283b\",\n  \"cast\": \"Pemeran Contoh\",\n  \"director\": \"Sutradara Contoh\",\n  \"synopsis\": \"Film contoh untuk pengujian CRUD menggunakan Postman.\",\n  \"episodes\": 8\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_api_key}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "15 Hapus serial baru (admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/series/{{created_series_id}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{admin_api_key}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

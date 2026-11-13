@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS genres (name TEXT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS titles (
+ id TEXT PRIMARY KEY,
+ type TEXT NOT NULL CHECK(type IN ('film','serial')),
+ title TEXT NOT NULL,
+ genre TEXT NOT NULL REFERENCES genres(name) ON UPDATE CASCADE,
+ payload TEXT NOT NULL CHECK(json_valid(payload)),
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS titles_type_genre ON titles(type,genre);
+CREATE TABLE IF NOT EXISTS migrations(id TEXT PRIMARY KEY);

@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "CineShelf",
+    "slug": "cineshelf",
+    "version": "0.2.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.cineshelf.prototype"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
