@@ -13,3 +13,8 @@ backend/data/
 credentials.json
 *.jks
 *.keystore
+
+.vercel/
+backend/.vercel/
+android/.kotlin/
+*.log

@@ -1,7 +1,7 @@
 # CineShelf — React Native + API
 
 Aplikasi katalog film dan serial untuk Tugas Akhir Praktikum PPB. Tampilan gelap,
-7 halaman, dua list utama beserta detail, pencarian/filter, paginasi, dan watchlist.
+5 tab utama dan halaman detail tambahan, dua list utama beserta detail, pencarian/filter, paginasi, dan watchlist.
 Versi 0.2.0 menambahkan REST API Express, database, dan integrasi fetch.
 
 ## Jalankan pertama kali (laptop + HP)
@@ -119,7 +119,7 @@ Konfigurasi Vercel tersedia di `backend/vercel.json` dan `backend/api/index.js`.
 
 SQLite sengaja ditolak pada Vercel karena file database lokal tidak cocok untuk
 persistensi serverless. Konfigurasi deployment disediakan, tetapi belum dideploy
-ke akun cloud. Adapter Supabase belum diuji dengan project cloud sungguhan.
+ke akun cloud. Adapter Supabase belum berhasil diverifikasi pada konfigurasi cloud saat audit terakhir; deployment dan setup cloud akan dilakukan pemilik project.
 
 ## GitHub
 
@@ -172,3 +172,8 @@ backend/api/index.js          entry serverless
 ```
 
 Petunjuk demo: `docs/ASISTENSI.md`. Kontrak API: `docs/API.md`.
+
+Panduan SQL siap pakai dan deployment mandiri: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**. Jalankan satu file **backend/database/setup-and-seed.supabase.sql** di SQL Editor Supabase untuk membuat schema sekaligus mengisi katalog.
+
+Untuk backend lokal tanpa mengubah .env Supabase: `npm run api:local`.
+Untuk memeriksa API nyata: `npm run api:check -- http://localhost:5002/api` (atau URL HTTPS Vercel Anda).
