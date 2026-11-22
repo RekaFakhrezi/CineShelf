@@ -18,11 +18,11 @@ DB_DRIVER=supabase
 PORT=5002
 HOST=0.0.0.0
 SUPABASE_URL=https://PROJECT_REF.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=SERVICE_ROLE_KEY_DARI_PROJECT_ANDA
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_ISI_SECRET_KEY_PROJECT_ANDA
 ADMIN_API_KEY=KUNCI_ADMIN_ACAK_YANG_ANDA_SIMPAN_SENDIRI
 ```
 
-Project URL tersedia pada pengaturan Data API/Connect. Ambil **service_role key** dari halaman API Keys (Legacy API Keys bila diperlukan). Backend ini memakai service_role untuk tabel dengan RLS; jangan isi publishable/anon key pada variabel tersebut. Nama menu dashboard dapat berubah; yang dicari adalah Project URL dan server-side service_role key.
+Project URL tersedia pada Connect/pengaturan Data API. Dari Settings → API Keys, gunakan **Secret key** berawalan **sb_secret_**. Masukkan nilainya pada variabel **SUPABASE_SERVICE_ROLE_KEY**; nama variabel ini dipertahankan untuk kompatibilitas kode backend. Secret key modern mengakses database melalui role service_role. Bila project masih memakai key lama, legacy service_role key juga kompatibel, tetapi Supabase menyarankan migrasi ke secret key modern. Jangan gunakan publishable/anon key di variabel ini.
 
 Jangan menaruh service_role key atau ADMIN_API_KEY di app.json, catalog.js, SQL, EXPO_PUBLIC_*, source frontend, atau GitHub. Jangan mengirimkannya lewat screenshot. .env sudah diabaikan Git.
 
@@ -67,3 +67,5 @@ Dari root: **npm run api:local**. Ini memaksa SQLite secara eksplisit tanpa meng
 Untuk Expo Go, HP dan laptop berada di Wi-Fi yang sama. Masukkan URL LAN yang dicetak terminal, misalnya http://IP_LAPTOP:5002/api. Jangan pakai localhost dari HP.
 
 APK standalone mempertahankan kebijakan HTTPS. Gunakan URL Vercel HTTPS untuk API pada APK. Mode demo tersedia untuk melihat UI sebelum backend online, tetapi mode demo bukan bukti syarat API.
+
+Referensi resmi: [jenis API key Supabase](https://supabase.com/docs/guides/getting-started/api-keys), [Express di Vercel](https://vercel.com/docs/frameworks/backend/express), [environment variables Vercel](https://vercel.com/docs/environment-variables).
