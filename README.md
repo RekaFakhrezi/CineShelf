@@ -124,7 +124,7 @@ ke akun cloud. Adapter Supabase belum berhasil diverifikasi pada konfigurasi clo
 ## GitHub
 
 Repository: [RekaFakhrezi/CineShelf](https://github.com/RekaFakhrezi/CineShelf).
-Commit pertama berisi prototype versi 0.2.0 (aplikasi, backend, tes, dan dokumentasi).
+Source terbaru mencakup komponen/screen hasil redesign, backend, tes, native project Android, SQL siap pakai, dan panduan deployment.
 `.gitignore` mengecualikan `.env`, database lokal, node_modules, dan kredensial.
 
 Untuk mengambil source di komputer lain:
@@ -149,9 +149,7 @@ npx eas-cli@latest build --platform android --profile preview
 
 Gunakan backend **HTTPS** untuk APK. Atur URL lewat Profil setelah instalasi atau
 variabel `EXPO_PUBLIC_API_URL` di environment build Expo. Backend lokal HTTP
-belum dikonfigurasi untuk cleartext pada APK release. Akun/proyek Expo, pilihan
-kredensial Android, kuota build, dan pengujian APK fisik belum dilakukan. File APK
-belum termasuk paket ini; build bundle Metro bukan APK.
+belum dikonfigurasi untuk cleartext pada APK release. APK standalone untuk demonstrasi internal juga sudah berhasil dibangun secara lokal dengan Gradle. Lihat **docs/ANDROID.md** untuk langkah build Windows dan **docs/VALIDASI.md** untuk bukti/hash. APK belum diuji pada HP fisik. File APK dibagikan terpisah dari source; build bundle Metro bukan APK.
 
 ## Struktur utama
 

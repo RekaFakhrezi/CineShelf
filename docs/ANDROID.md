@@ -4,6 +4,8 @@ Untuk menjalankan di Expo Go tidak perlu APK. Untuk menghasilkan APK standalone,
 
 Prasyarat: Android SDK (platform/build-tools sesuai Expo SDK 54), JDK yang kompatibel dengan Gradle 8.14.3 (misalnya JDK 17/21; build lokal ini menggunakan JDK 18), Node.js dan dependensi npm.
 
+Pada Windows, gunakan lokasi project yang pendek (contoh C:/Users/NAMA/Downloads/cs). Folder bertingkat panjang dapat membuat Ninja/CMake gagal pada batas 260 karakter. Build yang diverifikasi menggunakan salinan pendek, tanpa memindahkan source utama.
+
 1. Jalankan npm ci dari root.
 2. Set JAVA_HOME ke JDK yang kompatibel; jangan mengubah Java sistem. Set ANDROID_HOME ke folder SDK Android pada sesi terminal tersebut.
 3. Jika android/app/debug.keystore belum ada pada hasil clone, buat kunci debug standar dengan keytool. File ini sengaja tidak masuk Git:
