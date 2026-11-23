@@ -1,13 +1,9 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { THEME } from "../constants/theme";
-import { Icon } from "../components/common/Icon";
-import { ScalePressable } from "../components/common/ScalePressable";
 import { HeroBannerCarousel } from "../components/home/HeroBannerCarousel";
 import { Shelf } from "../components/home/Shelf";
 import { CineRouletteCard } from "../components/home/CineRouletteCard";
-import { DotPatternBackground, HalftoneCornerDeco } from "../components/common/DitherAccent";
 
 export function HomeScreen({
   homeScrollRef,
@@ -39,7 +35,7 @@ export function HomeScreen({
         },
       ]}
     >
-      {/* 5-Slide Auto-sliding Hero Carousel with Seamless Bottom Gradient Fade */}
+      {/* Full-width, user-controlled cover carousel */}
       {heroItems && heroItems.length > 0 ? (
         <HeroBannerCarousel
           items={heroItems}

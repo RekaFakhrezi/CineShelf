@@ -69,3 +69,11 @@ Untuk Expo Go, HP dan laptop berada di Wi-Fi yang sama. Masukkan URL LAN yang di
 APK standalone mempertahankan kebijakan HTTPS. Gunakan URL Vercel HTTPS untuk API pada APK. Mode demo tersedia untuk melihat UI sebelum backend online, tetapi mode demo bukan bukti syarat API.
 
 Referensi resmi: [jenis API key Supabase](https://supabase.com/docs/guides/getting-started/api-keys), [Express di Vercel](https://vercel.com/docs/frameworks/backend/express), [environment variables Vercel](https://vercel.com/docs/environment-variables).
+
+## Alamat utama backend dan tampilan aplikasi
+
+Deployment dengan Root Directory backend hanya menyediakan API. Alamat utama diarahkan ke /api/health, bukan halaman aplikasi. Framework di vercel.json ditetapkan null agar memakai handler API eksplisit. Jika /api/health dan api:check berhasil tetapi / menampilkan FUNCTION_INVOCATION_FAILED, jangan mengganti key Supabase yang sudah valid; push perubahan konfigurasi ini lalu Redeploy. Penyebab internal function sebelumnya memerlukan runtime log Vercel untuk dipastikan.
+
+Untuk menjalankan tampilan di terminal IDE, dari root cineshelf gunakan npm run web (browser) atau npm start (Expo Go). Jalankan npm run api pada terminal terpisah jika memakai backend laptop. npm expo run bukan perintah npm yang valid. Untuk build Android lokal gunakan npm run android hanya bila Android SDK/emulator sudah disiapkan.
+
+Tampilan web dapat dideploy sebagai project Vercel kedua: Root Directory cineshelf/root repo, Framework Other, Build Command npx expo export --platform web, Output Directory dist, dan EXPO_PUBLIC_API_URL=https://cine-shelf-sigma.vercel.app/api. Jangan menyalin secret key ke project frontend.

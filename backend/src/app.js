@@ -10,6 +10,7 @@ export function createApp(database, config) {
     model = createCatalogModel(database),
     admin = requireAdmin(config.adminKey);
   app.disable("x-powered-by");
+  app.get("/", (req, res) => res.redirect(307, "/api/health"));
   app.use(cors({ origin: config.origins?.length ? config.origins : true }));
   app.use(express.json({ limit: "32kb" }));
   app.get("/api/health", async (req, res) => {
