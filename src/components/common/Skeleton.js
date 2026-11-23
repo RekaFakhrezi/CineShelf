@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet } from "react-native";
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 import { THEME } from "../../constants/theme";
 
 export function Skeleton({
@@ -8,9 +9,11 @@ export function Skeleton({
   borderRadius = 8,
   style,
 }) {
+  const reducedMotion = useReducedMotion();
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
+    if (reducedMotion) { pulseAnim.setValue(0.45); return; }
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -27,7 +30,7 @@ export function Skeleton({
     );
     pulse.start();
     return () => pulse.stop();
-  }, [pulseAnim]);
+  }, [pulseAnim, reducedMotion]);
 
   return (
     <Animated.View

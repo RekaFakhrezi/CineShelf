@@ -75,7 +75,7 @@ export function ProfileScreen({
       <View style={[s.statusCardBox, { marginBottom: 24, gap: 12 }]}>
         <Text style={s.statusCardTitle}>Katalog film dan serial pribadi</Text>
         <Text style={s.statusCardDesc}>Temukan judul, susun watchlist ke dalam rak, dan catat tontonan serta penilaianmu. Dikembangkan sebagai tugas akhir individu Praktikum Pemrograman Perangkat Bergerak 2026 menggunakan React Native dan API buatan sendiri.</Text>
-        <Text style={s.statusCardDesc}>Katalog menggunakan film dan serial fiktif untuk keperluan pembelajaran. Foto adalah ilustrasi dari Unsplash. Rating dan informasi cerita merupakan data contoh; CineShelf tidak menyediakan layanan streaming.</Text>
+        <Text style={s.statusCardDesc}>Katalog awal berisi judul fiktif dan ilustrasi Unsplash untuk pembelajaran. Pengguna juga dapat menambahkan film, serial, dan cover ke katalog bersama. Rating awal adalah data contoh; CineShelf tidak menyediakan layanan streaming.</Text>
         <Text style={s.statusCardSubtitle}>Versi {appConfig.expo.version} · React Native / Expo</Text>
         <Text style={s.statusCardSubtitle}>Source: github.com/RekaFakhrezi/CineShelf</Text>
       </View>

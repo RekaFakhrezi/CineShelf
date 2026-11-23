@@ -22,13 +22,13 @@ export function normalizeApiUrl(value) {
 export async function apiRequest(
   base,
   path,
-  { signal, method = "GET", body } = {},
+  { signal, method = "GET", body, timeout = 12000 } = {},
 ) {
   const controller = new AbortController();
   const abort = () => controller.abort();
   signal?.addEventListener("abort", abort, { once: true });
   if (signal?.aborted) controller.abort();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), timeout);
   try {
     const response = await fetch(`${normalizeApiUrl(base)}${path}`, {
       method,
@@ -54,7 +54,7 @@ export async function apiRequest(
     if (signal?.aborted) throw error;
     if (error.name === "AbortError")
       throw Error(
-        "Server belum merespons dalam 12 detik. Periksa koneksi dan coba lagi.",
+        "Server belum merespons. Periksa koneksi dan coba lagi.",
       );
     if (error instanceof TypeError)
       throw Error(
@@ -69,6 +69,7 @@ export async function apiRequest(
 export const endpointFor = (type) => (type === "serial" ? "series" : "movies");
 export function createApi(base) {
   return {
+    contribute: (body, signal) => apiRequest(base, "/contributions", { signal, method: "POST", body, timeout: 60000 }),
     health: (signal) => apiRequest(base, "/health", { signal }),
     home: (signal) => apiRequest(base, "/home", { signal }),
     genres: (signal) => apiRequest(base, "/genres", { signal }),

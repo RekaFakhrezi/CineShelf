@@ -32,6 +32,7 @@ test('hero: rapid navigation, wrap, resize, swipe and reduced-motion stay in syn
     if(name.endsWith('/useReducedMotion')) return {useReducedMotion:()=>reduced};
     if(name.endsWith('/ScalePressable')) return {ScalePressable:'Control'};
     if(name.endsWith('/Button')) return {Button:'Button'};
+    if(name.endsWith('/Skeleton')) return {Skeleton:'Skeleton'};
     if(name.endsWith('/Icon')) return {Icon:'Icon'};
     throw Error(name);
   },module,module.exports);

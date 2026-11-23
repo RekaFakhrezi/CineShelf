@@ -29,6 +29,10 @@ import { createApi, normalizeApiUrl } from "./src/services/api";
 import { defaultApiUrl } from "./src/services/config";
 import { useRequest, useDebounced } from "./src/hooks/useRequest";
 
+import { AddTitleModal } from "./src/components/catalog/AddTitleModal";
+import { ScalePressable } from "./src/components/common/ScalePressable";
+import { Icon } from "./src/components/common/Icon";
+
 // Navigation Components
 import { TopCapsuleHeader } from "./src/components/navigation/TopCapsuleHeader";
 import { FloatingBottomCapsule } from "./src/components/navigation/FloatingBottomCapsule";
@@ -66,6 +70,8 @@ function CineShelf() {
 
   // Navigation & filter state
   const [tab, setTab] = useState("home");
+  const [addingTitle, setAddingTitle] = useState(false);
+  const [catalogRevision, setCatalogRevision] = useState(0);
   const [detail, setDetail] = useState(null);
   const [searchModal, setSearchModal] = useState(false);
   const [query, setQuery] = useState("");
@@ -164,7 +170,7 @@ function CineShelf() {
       ]);
       return { home: homeData.data, genres: genresData.data };
     },
-    [connection.url],
+    [connection.url, catalogRevision],
     connectionReady && isApi,
   );
 
@@ -557,7 +563,7 @@ function CineShelf() {
   const debouncedQuery = useDebounced(query);
   const listRequest = useRequest(
     (signal) => api.list(tab, { q: debouncedQuery, genre, page }, signal),
-    [connection.url, tab, debouncedQuery, genre, page],
+    [connection.url, tab, debouncedQuery, genre, page, catalogRevision],
     connectionReady && isApi && ["film", "serial"].includes(tab),
   );
 
@@ -848,6 +854,19 @@ function CineShelf() {
         </Animated.View>
       </View>
 
+      {connectionReady && isApi && !detail && tab !== "profile" && <View pointerEvents="box-none" style={[s.addButtonFrame, { bottom: Math.max(inset.bottom, 14) + 82 }]}>
+        <ScalePressable onPress={() => setAddingTitle(true)} accessibilityLabel="Tambah film atau serial"
+          containerStyle={{ alignSelf: "flex-end", marginRight: 20 }} style={s.addButton}>
+          <Icon name="add" size={27} color="white" />
+        </ScalePressable>
+      </View>}
+      <AddTitleModal visible={addingTitle} initialType={tab === "serial" ? "serial" : "film"}
+        genres={genres.filter(value => value !== "Semua")} api={api} onClose={() => setAddingTitle(false)}
+        onCreated={item => {
+          setAddingTitle(false); setCatalogRevision(value => value + 1); handleOpenDetail(item);
+          setNotice({ text: "Judul berhasil ditambahkan ke katalog", type: "save" });
+        }} />
+
       {/* BOTTOM FLOATING CAPSULE NAVBAR */}
       <FloatingBottomCapsule
         tab={tab}
@@ -925,6 +944,8 @@ export default function App() {
 }
 
 const s = StyleSheet.create({
+  addButtonFrame: { position: "absolute", left: 0, right: 0, width: "100%", maxWidth: 1040, alignSelf: "center", zIndex: 80 },
+  addButton: { width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center", backgroundColor: THEME.accent, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", ...THEME.raisedShadow },
   rootContainer: {
     flex: 1,
     backgroundColor: THEME.bg,

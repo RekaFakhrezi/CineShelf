@@ -3,20 +3,22 @@ import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { THEME } from "../../constants/theme";
 import { Icon } from "../common/Icon";
 import { ScalePressable } from "../common/ScalePressable";
+import { Skeleton } from "../common/Skeleton";
+import { LoadingContent } from "../common/LoadingContent";
 import { Poster } from "./Poster";
 
 // Horizontal Shelf
-export function Shelf({ title, subtitle, items, onOpen, saved, onAll, onToggleSave }) {
+export function Shelf({ title, subtitle, items, onOpen, saved, onAll, onToggleSave, loading = false }) {
   return (
     <View style={s.shelfContainer}>
       <View style={s.shelfHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={s.shelfTitle}>{title}</Text>
-          {subtitle && <Text style={s.shelfSubtitle}>{subtitle}</Text>}
+          <LoadingContent loading={loading}><Text style={s.shelfTitle}>{title}</Text></LoadingContent>
+          {subtitle && <LoadingContent loading={loading}><Text style={s.shelfSubtitle}>{subtitle}</Text></LoadingContent>}
         </View>
-        {onAll && (
-          <ScalePressable onPress={onAll} style={s.seeAllBtn}>
-            <Text style={s.seeAllText}>Lihat semua</Text>
+        {(onAll || loading) && (
+          <ScalePressable disabled={loading} onPress={onAll} style={s.seeAllBtn}>
+            <LoadingContent loading={loading}><Text style={s.seeAllText}>Lihat semua</Text></LoadingContent>
             <Icon name="chevron-forward" size={14} color={THEME.textSecondary} />
           </ScalePressable>
         )}
@@ -26,7 +28,10 @@ export function Shelf({ title, subtitle, items, onOpen, saved, onAll, onToggleSa
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={s.shelfScroll}
       >
-        {items.map((item) => (
+        {loading ? Array.from({ length: 5 }, (_, i) => <View key={i} style={{ width: 136 }}>
+          <Skeleton width={136} height={136 * 1.44} borderRadius={12} />
+          <View style={{ height: 92, paddingTop: 12, gap: 6 }}><Skeleton width={112} height={20} borderRadius={4} /><Skeleton width={78} height={14} borderRadius={4} /><Skeleton width={64} height={14} borderRadius={4} /></View>
+        </View>) : items.map((item) => (
           <Poster
             key={item.id}
             item={item}

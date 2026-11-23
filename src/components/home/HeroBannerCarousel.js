@@ -4,11 +4,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { THEME } from "../../constants/theme";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
 import { Icon } from "../common/Icon";
+import { Skeleton } from "../common/Skeleton";
 import { Button } from "../common/Button";
 import { ScalePressable } from "../common/ScalePressable";
 
-export function HeroBannerCarousel({ items = [], saved = [], ready, onOpen, onToggleSave, topPadding = 76 }) {
-  const slides = items.slice(0, 5);
+export function HeroBannerCarousel({ items = [], saved = [], ready, onOpen, onToggleSave, topPadding = 76, loading = false }) {
+  const slides = loading ? Array.from({ length: 5 }, (_, id) => ({ id: "loading-" + id, title: "Memuat tontonan" })) : items.slice(0, 5);
   const count = slides.length;
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [width, setWidth] = useState(Math.min(windowWidth, 1040));
@@ -57,7 +58,7 @@ export function HeroBannerCarousel({ items = [], saved = [], ready, onOpen, onTo
     if (measured > 0 && measured !== width) setWidth(measured);
   }} style={{ paddingTop: Math.max(0, topPadding - 8) }}>
     <View style={{ height }} accessibilityLabel="Pilihan CineShelf">
-      <ScrollView ref={track} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+      <ScrollView pointerEvents={loading ? "none" : "auto"} ref={track} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
         directionalLockEnabled scrollEventThrottle={16}
         style={[s.track, Platform.OS === "web" && { overscrollBehaviorX: "contain" }]}
         onScrollBeginDrag={() => { pending.current = null; }}
@@ -80,6 +81,13 @@ export function HeroBannerCarousel({ items = [], saved = [], ready, onOpen, onTo
             colors={[THEME.bg, "rgba(13,23,36,0.05)", "rgba(13,23,36,0.08)", "rgba(13,23,36,0.87)", THEME.bg]}
             locations={[0, 0.19, 0.43, 0.75, 1]} style={StyleSheet.absoluteFill} />
           <View style={[s.content, wide && s.wideContent]}>
+            {loading ? <>
+              <Skeleton width={110} height={14} borderRadius={4} />
+              <Skeleton width="82%" height={wide ? 52 : 40} borderRadius={6} />
+              <View style={[s.meta, { height: 17 }]}>{[36,32,54,44].map((w,i)=><Skeleton key={i} width={w} height={14} borderRadius={4} />)}</View>
+              <Skeleton width="85%" height={21} borderRadius={4} />
+              <View style={[s.actions, { height: 48, alignItems: "center" }]}><Skeleton width={98} height={38} /><Skeleton width={110} height={38} /></View>
+            </> : <>
             <Text style={s.pick}>Pilihan CineShelf</Text>
             <Text style={[s.title, wide && s.wideTitle]}>{item.title}</Text>
             <View style={s.meta}><Icon name="star" size={14} color={THEME.star} /><Text style={s.rating}>{item.rating}</Text>
@@ -88,19 +96,19 @@ export function HeroBannerCarousel({ items = [], saved = [], ready, onOpen, onTo
             <View style={s.actions}><Button label="Lihat detail" onPress={() => onOpen(item)} />
               <Button label={saved.includes(item.id) ? "Tersimpan" : "Watchlist"}
                 icon={saved.includes(item.id) ? "bookmark" : "add-outline"}
-                secondary disabled={!ready} onPress={() => onToggleSave(item)} /></View>
+                secondary disabled={!ready} onPress={() => onToggleSave(item)} /></View></>}
           </View>
         </View>)}
       </ScrollView>
       {count > 1 && [-1, 1].map(direction => <ScalePressable key={direction}
         containerStyle={[s.arrowPosition, direction < 0 ? { left: 8 } : { right: 8 }]}
-        onPress={() => goTo((pending.current ?? current.current) + direction)}
+        disabled={loading} onPress={() => goTo((pending.current ?? current.current) + direction)}
         accessibilityLabel={direction < 0 ? "Pilihan sebelumnya" : "Pilihan berikutnya"} style={s.arrow}>
         <Icon name={direction < 0 ? "chevron-back" : "chevron-forward"} size={22} color={THEME.textPrimary} />
       </ScalePressable>)}
     </View>
     {count > 1 && <View style={s.dots} accessibilityLabel="Pilih cover">
-      {slides.map((item, dotIndex) => <Pressable accessibilityRole="button" key={item.id} onPress={() => goTo(dotIndex)}
+      {slides.map((item, dotIndex) => <Pressable disabled={loading} accessibilityRole="button" key={item.id} onPress={() => goTo(dotIndex)}
         accessibilityLabel={"Tampilkan pilihan " + (dotIndex + 1) + ": " + item.title}
         accessibilityState={{ selected: index === dotIndex }}
         {...(Platform.OS === "web" ? { "aria-current": index === dotIndex ? "true" : undefined } : {})} style={s.dotTarget}>

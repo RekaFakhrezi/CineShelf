@@ -2,6 +2,14 @@ import { randomUUID } from "node:crypto";
 export function createCatalogModel(database) {
   const db = database.client,
     sql = database.driver === "sqlite";
+  async function hydrate(item) {
+    if (item?._coverPath && !sql) {
+      const { data, error } = await db.storage.from("cineshelf-covers").createSignedUrl(item._coverPath, 3600);
+      if (error) throw error;
+      return { ...item, image: data.signedUrl };
+    }
+    return item;
+  }
   async function check(promise) {
     const { data, error } = await promise;
     if (error) throw error;
@@ -49,7 +57,7 @@ export function createCatalogModel(database) {
         result.push(...rows.map((x) => x.payload));
         if (rows.length < 500) break;
       }
-      return result;
+      return Promise.all(result.map(hydrate));
     },
     async get(id) {
       if (sql) {
@@ -59,7 +67,7 @@ export function createCatalogModel(database) {
       const row = await check(
         db.from("titles").select("payload").eq("id", id).maybeSingle(),
       );
-      return row?.payload || null;
+      return hydrate(row?.payload || null);
     },
     async create(data) {
       const item = { ...data, id: randomUUID() };

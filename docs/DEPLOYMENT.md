@@ -79,3 +79,5 @@ Untuk menjalankan tampilan di terminal IDE, dari root cineshelf gunakan npm run 
 Tampilan web dapat dideploy sebagai project Vercel kedua: Root Directory cineshelf/root repo, Framework Other, Build Command npx expo export --platform web, Output Directory dist, dan EXPO_PUBLIC_API_URL=https://cine-shelf-sigma.vercel.app/api. Jangan menyalin secret key ke project frontend.
 
 Konfigurasi frontend disimpan pada vercel.json root: framework=null (Other), buildCommand=npx expo export --platform web, outputDirectory=dist. Ini mencegah build frontend Expo diproses sebagai Express. Jika log sudah Exported: dist lalu No entrypoint found which imports express, pastikan deployment frontend memakai commit yang memuat file root ini dan Root Directory adalah root repository. backend/vercel.json hanya untuk project API dengan Root Directory backend.
+
+Fitur tambah judul dengan cover: lihat docs/CONTRIBUTIONS.md. Bucket cineshelf-covers harus private; backend membuat signed URL saat katalog dibaca. Untuk project baru jalankan backend/database/storage.supabase.sql atau npm --prefix backend run setup:storage. Deploy backend dan frontend dari commit fitur yang sama.

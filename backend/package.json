@@ -13,7 +13,8 @@
     "setup": "node scripts/setup.js",
     "seed": "node scripts/seed.js",
     "test": "node --test tests/*.test.js",
-    "local": "node scripts/local.js"
+    "local": "node scripts/local.js",
+    "setup:storage": "node scripts/setup-storage.js"
   },
   "dependencies": {
     "express": "^5.2.1",

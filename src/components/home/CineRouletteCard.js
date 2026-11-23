@@ -2,20 +2,21 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { THEME } from "../../constants/theme";
+import { LoadingContent } from "../common/LoadingContent";
 import { Icon } from "../common/Icon";
 import { ScalePressable } from "../common/ScalePressable";
-export function CineRouletteCard({ onSelectMood, onOpenRoulette }) {
+export function CineRouletteCard({ onSelectMood, onOpenRoulette, loading = false }) {
   const moods = [{ id: "santai", label: "Santai", icon: "cafe-outline" }, { id: "mikir", label: "Bikin mikir", icon: "bulb-outline" },
     { id: "adrenalin", label: "Menegangkan", icon: "flash-outline" }, { id: "drama", label: "Emosional", icon: "heart-outline" }, { id: "singkat", label: "Di bawah 100 menit", icon: "time-outline" }];
   return <View style={s.section}>
     <LinearGradient pointerEvents="none" colors={[THEME.surfaceHighlight, THEME.bgSecondary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-    <View style={s.header}><View style={{ flex: 1, gap: 6 }}><Text style={s.title}>Lagi ingin nonton apa?</Text>
-      <Text style={s.description}>Mulai dari suasana hatimu.</Text></View>
-      <ScalePressable onPress={onOpenRoulette} accessibilityLabel="Acak tontonan dengan CineRoulette" style={s.shuffle}>
-        <Icon name="shuffle-outline" size={20} color={THEME.textPrimary} /><Text style={s.shuffleText}>Acak</Text>
+    <View style={s.header}><View style={{ flex: 1, gap: 6 }}><LoadingContent loading={loading}><Text style={s.title}>Lagi ingin nonton apa?</Text></LoadingContent>
+      <LoadingContent loading={loading}><Text style={s.description}>Mulai dari suasana hatimu.</Text></LoadingContent></View>
+      <ScalePressable disabled={loading} onPress={onOpenRoulette} accessibilityLabel="Acak tontonan dengan CineRoulette" style={s.shuffle}>
+        <Icon name="shuffle-outline" size={20} color={THEME.textPrimary} /><LoadingContent loading={loading}><Text style={s.shuffleText}>Acak</Text></LoadingContent>
       </ScalePressable></View>
-    <View style={s.moods}>{moods.map(m => <ScalePressable key={m.id} onPress={() => onSelectMood(m.id)} style={s.mood}>
-      <Icon name={m.icon} size={18} color={THEME.textSecondary} /><Text style={s.moodText}>{m.label}</Text>
+    <View style={s.moods}>{moods.map(m => <ScalePressable key={m.id} disabled={loading} onPress={() => onSelectMood(m.id)} style={s.mood}>
+      <Icon name={m.icon} size={18} color={THEME.textSecondary} /><LoadingContent loading={loading}><Text style={s.moodText}>{m.label}</Text></LoadingContent>
     </ScalePressable>)}</View>
   </View>;
 }
