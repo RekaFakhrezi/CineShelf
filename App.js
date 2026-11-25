@@ -3,6 +3,8 @@ import {
   View,
   StyleSheet,
   StatusBar,
+  Text,
+  ActivityIndicator,
   BackHandler,
   useWindowDimensions,
   Animated,
@@ -28,6 +30,10 @@ import {
 import { createApi, normalizeApiUrl } from "./src/services/api";
 import { defaultApiUrl } from "./src/services/config";
 import { useRequest, useDebounced } from "./src/hooks/useRequest";
+import { useAuth } from "./src/hooks/useAuth";
+import { useLibrary } from "./src/hooks/useLibrary";
+import { AuthScreen } from "./src/screens/AuthScreen";
+import { Button } from "./src/components/common/Button";
 
 import { AddTitleModal } from "./src/components/catalog/AddTitleModal";
 import { ScalePressable } from "./src/components/common/ScalePressable";
@@ -49,21 +55,13 @@ import { CineRouletteModal } from "./src/components/home/CineRouletteModal";
 import { CreateShelfModal } from "./src/components/shelves/CreateShelfModal";
 import { AddToShelfModal } from "./src/components/shelves/AddToShelfModal";
 
-// Initial custom shelves for thematic organization
-const INITIAL_SHELVES = [
-  { id: "all", name: "Semua", icon: "albums-outline", isDefault: true, items: [] },
-  { id: "weekend", name: "Akhir Pekan", icon: "film-outline", isDefault: false, items: ["f1", "f4"] },
-  { id: "mind", name: "Bikin Mikir", icon: "bulb-outline", isDefault: false, items: ["f1", "f3"] },
-  { id: "comfort", name: "Comfort Movies", icon: "cafe-outline", isDefault: false, items: ["f2"] },
-];
-
 // Screen Components
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { ListScreen } from "./src/screens/ListScreen";
 import { DetailScreen } from "./src/screens/DetailScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 
-function CineShelf() {
+function CineShelf({ connection, openSettings: showSettings, auth }) {
   const reducedMotion = useReducedMotion();
   const inset = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -79,36 +77,27 @@ function CineShelf() {
   const [page, setPage] = useState(1);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Custom Shelves State
-  const [shelves, setShelves] = useState(INITIAL_SHELVES);
+  const account = useLibrary(connection.url, auth.getToken);
+  const { saved, shelves, watchedList, userRatings, userReactions } = account.library;
+  const ready = account.ready;
+  const updateField = (field, value) => account.setLibrary(previous => ({
+    ...previous,
+    [field]: typeof value === "function" ? value(previous[field]) : value,
+  }));
+  const setSaved = value => updateField("saved", value);
+  const setShelves = value => updateField("shelves", value);
+  const setWatchedList = value => updateField("watchedList", value);
+  const setUserRatings = value => updateField("userRatings", value);
+  const setUserReactions = value => updateField("userReactions", value);
   const [activeShelfId, setActiveShelfId] = useState("all");
   const [createShelfModal, setCreateShelfModal] = useState(false);
   const [addToShelfItem, setAddToShelfItem] = useState(null);
-
-  // Watched & Ratings State
-  const [watchedList, setWatchedList] = useState([]);
-  const [userRatings, setUserRatings] = useState({});
-  const [userReactions, setUserReactions] = useState({});
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // CineRoulette / Mood State
   const [rouletteModal, setRouletteModal] = useState(false);
   const [rouletteMood, setRouletteMood] = useState("all");
 
-  // Connection state
-  const [connection, setConnection] = useState({
-    mode: "api",
-    url: defaultApiUrl(),
-  });
-  const [connectionReady, setConnectionReady] = useState(false);
-  const [settings, setSettings] = useState(false);
-  const [urlDraft, setUrlDraft] = useState("");
-  const [connectionError, setConnectionError] = useState("");
-  const [checking, setChecking] = useState(false);
-
-  // Watchlist & dialog state
-  const [saved, setSaved] = useState([]);
-  const [ready, setReady] = useState(false);
-  const [storageOK, setStorageOK] = useState(true);
   const [notice, setNotice] = useState(null);
   const [dialog, setDialog] = useState(null);
 
@@ -138,26 +127,6 @@ function CineShelf() {
     }).start();
   };
 
-  // Load saved connection mode
-  useEffect(() => {
-    let active = true;
-    AsyncStorage.getItem(STORAGE_KEYS.CONNECTION)
-      .then((raw) => {
-        if (raw && active) {
-          const c = JSON.parse(raw);
-          if (["api", "demo"].includes(c.mode)) {
-            setConnection({ mode: c.mode, url: normalizeApiUrl(c.url) });
-          }
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setConnectionReady(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const api = createApi(connection.url);
   const isApi = connection.mode === "api";
@@ -171,7 +140,7 @@ function CineShelf() {
       return { home: homeData.data, genres: genresData.data };
     },
     [connection.url, catalogRevision],
-    connectionReady && isApi,
+    isApi,
   );
 
   const demoHome = {
@@ -189,122 +158,6 @@ function CineShelf() {
     ? [...(home?.movies || []), ...(home?.series || [])]
     : demoCatalog;
 
-  // Load Watchlist
-  useEffect(() => {
-    let active = true;
-    AsyncStorage.getItem(STORAGE_KEYS.WATCHLIST)
-      .then((raw) => {
-        if (!active) return;
-        const initialShelfItems = INITIAL_SHELVES.flatMap((s) => s.items || []);
-        if (raw) {
-          const ids = JSON.parse(raw);
-          if (!Array.isArray(ids)) throw Error("invalid");
-          setSaved([
-            ...new Set([
-              ...ids.filter((id) => typeof id === "string" && id.length <= 100),
-              ...initialShelfItems,
-            ]),
-          ]);
-        } else {
-          setSaved([...new Set(initialShelfItems)]);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setStorageOK(false);
-          const initialShelfItems = INITIAL_SHELVES.flatMap((s) => s.items || []);
-          setSaved([...new Set(initialShelfItems)]);
-          setNotice({
-            text: "Penyimpanan tidak tersedia. Watchlist berlaku selama sesi.",
-            type: "info",
-          });
-        }
-      })
-      .finally(() => {
-        if (active) setReady(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Save Watchlist
-  useEffect(() => {
-    if (!ready || !storageOK) return;
-    AsyncStorage.setItem(STORAGE_KEYS.WATCHLIST, JSON.stringify(saved)).catch(() => {
-      setStorageOK(false);
-      setNotice({
-        text: "Watchlist belum tersimpan ke perangkat.",
-        type: "info",
-      });
-    });
-  }, [saved, ready, storageOK]);
-
-  // Load Custom Shelves
-  useEffect(() => {
-    let active = true;
-    AsyncStorage.getItem(STORAGE_KEYS.SHELVES)
-      .then((raw) => {
-        if (raw && active) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setShelves(parsed);
-          }
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Save Custom Shelves
-  useEffect(() => {
-    if (!ready || !storageOK) return;
-    AsyncStorage.setItem(STORAGE_KEYS.SHELVES, JSON.stringify(shelves)).catch(() => {});
-  }, [shelves, ready, storageOK]);
-
-  // Load Watched & Ratings
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      AsyncStorage.getItem(STORAGE_KEYS.WATCHED),
-      AsyncStorage.getItem(STORAGE_KEYS.RATINGS),
-    ])
-      .then(([rawWatched, rawRatings]) => {
-        if (!active) return;
-        if (rawWatched) {
-          const parsed = JSON.parse(rawWatched);
-          if (Array.isArray(parsed)) setWatchedList(parsed);
-        }
-        if (rawRatings) {
-          const parsed = JSON.parse(rawRatings);
-          if (parsed && typeof parsed === "object") {
-            setUserRatings(parsed.ratings || {});
-            setUserReactions(parsed.reactions || {});
-          }
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Save Watched List
-  useEffect(() => {
-    if (!ready || !storageOK) return;
-    AsyncStorage.setItem(STORAGE_KEYS.WATCHED, JSON.stringify(watchedList)).catch(() => {});
-  }, [watchedList, ready, storageOK]);
-
-  // Save Ratings & Reactions
-  useEffect(() => {
-    if (!ready || !storageOK) return;
-    AsyncStorage.setItem(
-      STORAGE_KEYS.RATINGS,
-      JSON.stringify({ ratings: userRatings, reactions: userReactions }),
-    ).catch(() => {});
-  }, [userRatings, userReactions, ready, storageOK]);
 
   // Toast notice timeout & animation
   useEffect(() => {
@@ -346,10 +199,6 @@ function CineShelf() {
         setSearchModal(false);
         return true;
       }
-      if (settings) {
-        setSettings(false);
-        return true;
-      }
       if (dialog) {
         setDialog(null);
         return true;
@@ -369,7 +218,6 @@ function CineShelf() {
     detail,
     tab,
     dialog,
-    settings,
     searchModal,
     rouletteModal,
     createShelfModal,
@@ -564,7 +412,7 @@ function CineShelf() {
   const listRequest = useRequest(
     (signal) => api.list(tab, { q: debouncedQuery, genre, page }, signal),
     [connection.url, tab, debouncedQuery, genre, page, catalogRevision],
-    connectionReady && isApi && ["film", "serial"].includes(tab),
+    isApi && ["film", "serial"].includes(tab),
   );
 
   const allSavedIds = useMemo(() => {
@@ -575,13 +423,13 @@ function CineShelf() {
   const savedRequest = useRequest(
     (signal) => api.resolve(allSavedIds, signal),
     [connection.url, JSON.stringify(allSavedIds)],
-    connectionReady && ready && isApi && tab === "watchlist",
+    ready && isApi && tab === "watchlist",
   );
 
   const detailRequest = useRequest(
     (signal) => api.detail(detail, signal),
     [connection.url, detail?.id, detail?.type],
-    connectionReady && isApi && !!detail,
+    isApi && !!detail,
   );
 
   const detailItem = isApi ? detailRequest.data?.data : detail;
@@ -611,7 +459,7 @@ function CineShelf() {
   const shelfFilteredItems =
     tab !== "watchlist" || activeShelfId === "all"
       ? watchlistBaseItems
-      : allKnownCatalog.filter((x) => {
+      : watchlistBaseItems.filter((x) => {
           const s = shelves.find((shelf) => shelf.id === activeShelfId);
           return (s?.items || []).includes(x.id);
         });
@@ -652,42 +500,6 @@ function CineShelf() {
   const reloadList = () =>
     tab === "watchlist" ? savedRequest.retry() : listRequest.retry();
 
-  function openSettings() {
-    setUrlDraft(connection.url);
-    setConnectionError("");
-    setSettings(true);
-  }
-
-  async function saveConnection(mode) {
-    setConnectionError("");
-    setChecking(true);
-    try {
-      const url = normalizeApiUrl(urlDraft || connection.url);
-      if (mode === "api") {
-        const result = await createApi(url).health();
-        if (result.status !== "ok" || result.service !== "cineshelf-api") {
-          throw Error("URL ini bukan CineShelf API.");
-        }
-      }
-      const next = { mode, url };
-      await AsyncStorage.setItem(STORAGE_KEYS.CONNECTION, JSON.stringify(next));
-      setConnection(next);
-      setSettings(false);
-      navigate("home");
-      homeRequest.retry();
-      setNotice({
-        text:
-          mode === "api"
-            ? "Terhubung ke CineShelf API"
-            : "Mode demo aktif — menggunakan katalog lokal",
-        type: "info",
-      });
-    } catch (e) {
-      setConnectionError(e.message);
-    } finally {
-      setChecking(false);
-    }
-  }
 
   const handleScroll = (event) => {
     const offsetY = event.nativeEvent.contentOffset.y;
@@ -705,6 +517,41 @@ function CineShelf() {
       ? [...home.movies, ...(home.series || [])].slice(0, 5)
       : [featured]
   ).filter(Boolean);
+  async function openSettings() {
+    try {
+      if (ready) await account.flush();
+      showSettings();
+    } catch (e) {
+      setNotice({ text: e.message, type: "info" });
+    }
+  }
+
+  async function logout() {
+    setLoggingOut(true);
+    try {
+      await account.flush();
+      return await auth.logout();
+    } catch (e) {
+      setNotice({ text: e.message, type: "info" });
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
+  if (!ready) {
+    return <View style={[s.rootContainer, s.accountLoading]}>
+      <StatusBar barStyle="light-content" backgroundColor={THEME.bg} />
+      {account.error ? <>
+        <Text style={s.accountMessage}>{account.error}</Text>
+        <Button label="Coba lagi" onPress={account.retry} />
+        <Button label="Pengaturan koneksi" secondary onPress={openSettings} />
+        <Button label="Keluar akun" ghost onPress={auth.logout} />
+      </> : <>
+        <ActivityIndicator color={THEME.accentSoft} />
+        <Text style={s.accountMessage}>Memuat rak akunmu…</Text>
+      </>}
+    </View>;
+  }
 
   return (
     <View style={s.rootContainer}>
@@ -726,12 +573,7 @@ function CineShelf() {
       {/* Main Content Area with Animated Transition */}
       <View style={s.mainFrame}>
         <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({ inputRange: [0.7, 1], outputRange: [4, 0], extrapolate: "clamp" }) }] }}>
-          {!connectionReady ? (
-            <HomeSkeleton
-              contentTopPadding={contentTopPadding}
-              contentBottomPadding={contentBottomPadding}
-            />
-          ) : detail ? (
+          {detail ? (
             isApi && detailRequest.loading ? (
               <DetailSkeleton
                 contentTopPadding={contentTopPadding}
@@ -804,6 +646,10 @@ function CineShelf() {
           ) : tab === "profile" ? (
             <ProfileScreen
               profileScrollRef={profileScrollRef}
+              user={auth.session.user}
+              onLogout={logout}
+              loggingOut={loggingOut}
+              syncStatus={account.saving ? "Menyimpan perubahan…" : account.error ? "Perubahan belum tersimpan" : "Tersimpan di akun"}
               savedCount={saved.length}
               totalTitles={home?.total ?? catalog.length}
               watchedCount={watchedList.length}
@@ -853,8 +699,12 @@ function CineShelf() {
           )}
         </Animated.View>
       </View>
+      {!!account.error && <View style={[s.syncBanner, { top: Math.max(inset.top, 8) + 68 }]}>
+        <Text style={s.accountMessage}>{account.error}</Text>
+        <Button label="Simpan ulang" size="sm" onPress={account.retry} />
+      </View>}
 
-      {connectionReady && isApi && !detail && tab !== "profile" && <View pointerEvents="box-none" style={[s.addButtonFrame, { bottom: Math.max(inset.bottom, 14) + 82 }]}>
+      {isApi && !detail && tab !== "profile" && <View pointerEvents="box-none" style={[s.addButtonFrame, { bottom: Math.max(inset.bottom, 14) + 82 }]}>
         <ScalePressable onPress={() => setAddingTitle(true)} accessibilityLabel="Tambah film atau serial"
           containerStyle={{ alignSelf: "flex-end", marginRight: 20 }} style={s.addButton}>
           <Icon name="add" size={27} color="white" />
@@ -882,16 +732,6 @@ function CineShelf() {
         topInset={inset.top}
       />
 
-      {/* Settings Modal (API vs Demo) */}
-      <SettingsModal
-        visible={settings}
-        onClose={() => setSettings(false)}
-        checking={checking}
-        urlDraft={urlDraft}
-        setUrlDraft={setUrlDraft}
-        connectionError={connectionError}
-        onSaveConnection={saveConnection}
-      />
 
       {/* Generic Info Dialog */}
       <InfoDialog dialog={dialog} onClose={() => setDialog(null)} />
@@ -934,16 +774,83 @@ function CineShelf() {
     </View>
   );
 }
+function AccountGate() {
+  const [connection, setConnection] = useState({ mode: "api", url: defaultApiUrl() });
+  const [connectionReady, setConnectionReady] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
+  const [connectionError, setConnectionError] = useState("");
+  const [checking, setChecking] = useState(false);
+  const auth = useAuth(connection.url, connectionReady);
+
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(STORAGE_KEYS.CONNECTION).then(raw => {
+      if (!raw || !active) return;
+      const stored = JSON.parse(raw);
+      if (["api", "demo"].includes(stored.mode)) {
+        setConnection({ mode: stored.mode, url: normalizeApiUrl(stored.url) });
+      }
+    }).catch(() => {}).finally(() => {
+      if (active) setConnectionReady(true);
+    });
+    return () => { active = false; };
+  }, []);
+
+  function openSettings() {
+    setUrlDraft(connection.url);
+    setConnectionError("");
+    setSettings(true);
+  }
+
+  async function saveConnection(mode) {
+    setChecking(true);
+    setConnectionError("");
+    try {
+      const url = normalizeApiUrl(urlDraft || connection.url);
+      const result = await createApi(url).health();
+      if (result.status !== "ok" || result.service !== "cineshelf-api") {
+        throw Error("URL ini bukan CineShelf API.");
+      }
+      const next = { mode, url };
+      await AsyncStorage.setItem(STORAGE_KEYS.CONNECTION, JSON.stringify(next));
+      setConnection(next);
+      setSettings(false);
+    } catch (e) {
+      setConnectionError(e.message);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  return <View style={s.rootContainer}>
+    <StatusBar barStyle="light-content" backgroundColor={THEME.bg} />
+    {!connectionReady || !auth.ready ? <View style={[s.rootContainer, s.accountLoading]}>
+      <ActivityIndicator color={THEME.accentSoft} />
+      <Text style={s.accountMessage}>Membuka CineShelf…</Text>
+    </View> : auth.session ? <CineShelf
+      key={`${connection.url}:${auth.session.user.id}`}
+      connection={connection} openSettings={openSettings} auth={auth}
+    /> : <AuthScreen auth={auth} openSettings={openSettings} />}
+    <SettingsModal visible={settings} onClose={() => setSettings(false)}
+      checking={checking} urlDraft={urlDraft} setUrlDraft={setUrlDraft}
+      connectionError={connectionError} onSaveConnection={saveConnection} />
+  </View>;
+}
+
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <MotionProvider><CineShelf /></MotionProvider>
+      <MotionProvider><AccountGate /></MotionProvider>
     </SafeAreaProvider>
   );
 }
 
 const s = StyleSheet.create({
+  accountLoading: { justifyContent: "center", alignItems: "center", gap: 16, padding: 24 },
+  accountMessage: { color: THEME.textSecondary, fontSize: 14, lineHeight: 21, textAlign: "center" },
+  syncBanner: { position: "absolute", alignSelf: "center", maxWidth: 480, backgroundColor: THEME.bgElevated, borderColor: THEME.accentSoft, borderWidth: 1, borderRadius: 12, padding: 14, marginHorizontal: 16, zIndex: 200 },
   addButtonFrame: { position: "absolute", left: 0, right: 0, width: "100%", maxWidth: 1040, alignSelf: "center", zIndex: 80 },
   addButton: { width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center", backgroundColor: THEME.accent, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", ...THEME.raisedShadow },
   rootContainer: {

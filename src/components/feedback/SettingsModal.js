@@ -35,8 +35,8 @@ export function SettingsModal({
             </ScalePressable>
           </View>
           <Text style={s.modalSubText}>
-            Pilih apakah aplikasi terhubung ke CineShelf REST API atau
-            menggunakan contoh katalog demo offline.
+            Pilih katalog API atau katalog contoh lokal. Login dan penyimpanan
+            rak tetap membutuhkan backend Supabase yang terhubung.
           </Text>
 
           <TextInput
@@ -64,7 +64,7 @@ export function SettingsModal({
               onPress={() => onSaveConnection("api")}
             />
             <Button
-              label="Gunakan Mode Demo Offline"
+              label="Gunakan Katalog Demo"
               icon="eye-outline"
               secondary
               disabled={checking}

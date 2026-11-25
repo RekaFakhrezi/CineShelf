@@ -20,6 +20,12 @@ Semua respons JSON, kecuali DELETE berhasil (204 tanpa body).
 | PUT | /series/:id | Ganti seluruh field serial | Admin |
 | DELETE | /series/:id | Hapus serial | Admin |
 | POST | /catalog/resolve | Ambil judul dari array `ids`; tidak mengubah data | Publik |
+| POST | /auth/signup | Daftar (`email`, `password`, `name`) | Publik |
+| POST | /auth/login | Masuk (`email`, `password`) | Publik |
+| POST | /auth/refresh | Perbarui sesi (`refresh_token`) | Publik |
+| POST | /auth/logout | Cabut sesi perangkat aktif | Akun |
+| GET | /library | Muat koleksi akun; `data: null` bila belum ada | Akun |
+| PUT | /library | Simpan seluruh koleksi akun | Akun |
 
 GET list mendukung `q` (judul/genre/pemeran), `genre`, `page` (default 1),
 `limit` (default 12, maksimum 100). Paginasi dilakukan sebelum respons dikirim.
@@ -50,3 +56,41 @@ SQLite menyimpan judul di tabel `titles` dengan payload JSON dan foreign key ke
 Kode status: 200 baca/update, 201 create, 204 delete, 400 validasi, 401 admin key
 salah, 404 endpoint/judul tidak ada, 413 body terlalu besar, 500 kegagalan database,
 503 operasi tulis atau konfigurasi deployment belum siap.
+
+## Akun dan koleksi pribadi
+
+Memerlukan `DB_DRIVER=supabase` dan `backend/database/accounts.supabase.sql`;
+SQLite mengembalikan 503 untuk endpoint akun/library, bukan login tiruan.
+Provider Email harus aktif di Supabase. Kata sandi baru minimal 6 karakter
+(atau lebih kuat bila kebijakan project mengharuskannya), nama 1–80 karakter.
+Respons auth: `{"data": session}` dengan format sesi Supabase (`access_token`,
+`refresh_token`, `expires_at`, `user`). Signup yang perlu konfirmasi mengembalikan
+`{"data":null,"message":"Periksa email ..."}`; belum dianggap login.
+
+Akses akun menggunakan `Authorization: Bearer ACCESS_TOKEN`, **bukan** admin key.
+Backend memverifikasi token ke Supabase Auth dan menentukan `user_id` sendiri;
+body `user_id` ditolak dan query pemilik tidak digunakan. Respons akun/library
+memakai `Cache-Control: no-store`. Logout mencabut refresh token sesi aktif;
+access token Supabase dapat tetap berlaku sampai waktu kedaluwarsanya.
+
+Body PUT `/library`:
+
+```json
+{
+  "saved": ["f1"],
+  "shelves": [
+    {"id":"all","name":"Semua","icon":"albums-outline","isDefault":true,"items":[]},
+    {"id":"shelf_1","name":"Akhir pekan","icon":"film-outline","isDefault":false,"items":["f1"]}
+  ],
+  "watchedList": [],
+  "userRatings": {"f1":4},
+  "userReactions": {"f1":"😍"}
+}
+```
+
+Maksimal body JSON 32 KiB, 500 ID per daftar, 50 rak, serta masing-masing 500
+rating/reaksi. ID unik berisi huruf/angka/underscore/tanda hubung maksimal 100
+karakter; rating 0–5. Rak `all` wajib ada, `isDefault` hanya benar untuk rak itu.
+Validasi gagal menghasilkan 400; sesi tidak valid 401; batas percobaan Supabase
+429; layanan akun atau tabel belum siap 503. PUT mengganti snapshot koleksi
+akun, bukan menggabungkan edit bersamaan dari beberapa perangkat.

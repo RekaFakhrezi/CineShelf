@@ -22,7 +22,7 @@ export function normalizeApiUrl(value) {
 export async function apiRequest(
   base,
   path,
-  { signal, method = "GET", body, timeout = 12000 } = {},
+  { signal, method = "GET", body, token, timeout = 12000 } = {},
 ) {
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -36,6 +36,7 @@ export async function apiRequest(
       headers: {
         Accept: "application/json",
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
@@ -45,10 +46,13 @@ export async function apiRequest(
     } catch {
       throw Error("Server tidak mengirim JSON. Periksa alamat API.");
     }
-    if (!response.ok)
-      throw Error(
+    if (!response.ok) {
+      const error = Error(
         json?.error?.message || `Permintaan gagal (${response.status}).`,
       );
+      error.status = response.status;
+      throw error;
+    }
     return json;
   } catch (error) {
     if (signal?.aborted) throw error;

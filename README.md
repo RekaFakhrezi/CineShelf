@@ -3,6 +3,8 @@
 Aplikasi katalog film dan serial untuk Tugas Akhir Praktikum PPB. Tampilan gelap,
 5 tab utama dan halaman detail tambahan, dua list utama beserta detail, pencarian/filter, paginasi, dan watchlist.
 Versi 0.2.0 menambahkan REST API Express, database, dan integrasi fetch.
+Login email/kata sandi memakai Supabase Auth. Watchlist, rak, status ditonton,
+rating dan reaksi tersimpan terpisah per akun; katalog tetap dipakai bersama.
 
 ## Jalankan pertama kali (laptop + HP)
 
@@ -20,12 +22,14 @@ npm run setup
 npm start
 ```
 
-Database SQLite dibuat dan diisi 10 judul contoh otomatis. Tidak perlu akun
-cloud untuk mencoba. Terminal menampilkan URL **untuk HP**, misalnya
-`http://192.168.1.10:5002/api`. Biarkan terminal tetap menyala.
+Sebelum `npm start`, konfigurasi Supabase di `backend/.env` dan jalankan SQL
+sesuai [panduan deployment](docs/DEPLOYMENT.md), termasuk
+`backend/database/accounts.supabase.sql`. Login memerlukan Supabase.
+SQLite tetap tersedia untuk pengujian API katalog, bukan login.
+Terminal menampilkan URL **untuk HP**, misalnya `http://192.168.1.10:5002/api`.
 
 Buka `http://localhost:5002/api/health` di laptop. Respons yang benar memiliki
-`status: "ok"`, `service: "cineshelf-api"`, dan `database: "sqlite"`.
+`status: "ok"`, `service: "cineshelf-api"`, dan `database: "supabase"`.
 
 ### 2. Aplikasi — terminal kedua, dari folder `cineshelf`
 
@@ -40,9 +44,10 @@ Untuk pratinjau browser laptop, jalankan `npm run web`.
 
 ### 3. Sambungkan aplikasi ke backend
 
-Aplikasi mencoba mendeteksi IP laptop dari Metro. Jika katalog belum muncul,
-tekan **Atur koneksi**, masukkan URL yang dicetak backend, lalu tekan
-**Uji dan hubungkan**. Menu yang sama ada di **Profil → Sumber katalog**.
+Aplikasi mencoba mendeteksi IP laptop dari Metro. Pada layar masuk, tekan
+**Atur koneksi API**, masukkan URL yang dicetak backend, lalu tekan
+**Uji & Hubungkan ke API**. Buat akun, konfirmasi email bila diminta, lalu masuk.
+Menu koneksi juga tersedia di Profil.
 URL tersimpan pada perangkat; tidak perlu mengubah source setiap kali IP berganti.
 
 Alternatif: isi `EXPO_PUBLIC_API_URL` pada `.env` root mengikuti `.env.example`,
@@ -58,10 +63,15 @@ memblokir. Tunnel Expo hanya membantu koneksi Metro, bukan otomatis backend.
 - **API (default):** beranda, daftar, detail, pencarian, genre dan resolusi watchlist
   memakai web service sendiri. Loading, error, retry, dan pembatalan request
   disediakan. Tidak ada fallback otomatis ke data contoh ketika API gagal.
-- **Demo:** dipilih sendiri melalui Sumber katalog → Coba mode demo. Memakai
-  `catalog.js` lokal. Mode ini diberi label dan bukan bukti integrasi API.
-- Watchlist menyimpan ID secara lokal dengan AsyncStorage, bukan akun cloud.
-  Detail judul di mode API tetap diambil dari backend. Tidak ada login/streaming.
+- **Demo:** dipilih sendiri melalui Sumber katalog → Gunakan Katalog Demo.
+  Memakai `catalog.js` lokal, tetapi login dan penyimpanan rak tetap online.
+  Mode ini diberi label dan bukan bukti integrasi API katalog.
+- Data pribadi tersimpan di Supabase berdasarkan identitas akun yang diverifikasi
+  backend. Sesi dipertahankan di perangkat melalui AsyncStorage; kata sandi tidak
+  disimpan. Akun baru mulai dengan watchlist dan rak kosong.
+- Data lokal versi lama tidak otomatis diklaim akun mana pun karena tidak memiliki
+  pemilik. Perubahan yang gagal tersimpan ditandai dan dapat dicoba ulang.
+  Keluar akun menunggu penyimpanan selesai. Tidak ada fitur streaming.
 
 Data seed berisi 6 film dan 4 serial fiktif; judul, rating, pemeran, dan episode
 adalah contoh. Foto ilustrasi dari Unsplash, bukan poster resmi film.
@@ -72,7 +82,8 @@ Struktur Node.js + Express + model/controller/router + `.env` mengikuti Modul 1.
 SQLite adalah jalur tambahan untuk uji lokal. Untuk memakai Supabase:
 
 1. Siapkan project Supabase sendiri.
-2. Jalankan `backend/database/schema.supabase.sql` di SQL Editor.
+2. Jalankan `backend/database/setup-and-seed.supabase.sql` dan
+   `backend/database/accounts.supabase.sql` di SQL Editor.
 3. Ubah `backend/.env`:
 
 ```dotenv
@@ -81,13 +92,15 @@ SUPABASE_URL=https://PROJECT_KAMU.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=ISI_DI_FILE_LOKAL_SENDIRI
 ```
 
-4. Dari folder backend jalankan `npm run seed`, lalu `npm start`.
+4. Aktifkan provider Email di Supabase Authentication, lalu jalankan `npm start`
+   dari folder backend. Katalog sudah diisi SQL; `npm run seed` tidak wajib.
 5. Pastikan `/api/health` menunjukkan `database: "supabase"` dan uji list/detail.
 
 Seed tidak menimpa ID yang sudah ada. Service-role key hanya dipakai backend;
-frontend hanya mengetahui URL API. Tabel mengaktifkan RLS tanpa kebijakan write
-publik. API tetap buatan sendiri: aplikasi menghubungi Express, bukan Supabase
-langsung. Operasi tulis katalog memakai ADMIN_API_KEY yang dibuat oleh setup.
+frontend hanya mengetahui URL API. Katalog memakai RLS tanpa akses write
+publik; tabel `user_libraries` memakai RLS pemilik akun. API tetap buatan
+sendiri: aplikasi menghubungi Express, bukan Supabase langsung.
+Operasi tulis admin katalog memakai ADMIN_API_KEY yang dibuat oleh setup.
 
 ## Pengujian dan Postman
 

@@ -36,10 +36,6 @@ export const THEME = {
 };
 
 export const STORAGE_KEYS = {
-  WATCHLIST: "cineshelf.watchlist.v1",
   CONNECTION: "cineshelf.connection.v1",
-  SHELVES: "cineshelf.shelves.v1",
-  WATCHED: "cineshelf.watched.v1",
-  RATINGS: "cineshelf.ratings.v1",
 };
 

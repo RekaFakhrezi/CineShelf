@@ -1,5 +1,6 @@
 import express from "express";
 import { contributionRoutes } from "./routes/contributionRoutes.js";
+import { accountRoutes } from "./routes/accountRoutes.js";
 import cors from "cors";
 import { catalogRoutes } from "./routes/catalogRoutes.js";
 import { createCatalogModel } from "./models/catalogModel.js";
@@ -15,6 +16,7 @@ export function createApp(database, config) {
   app.use(cors({ origin: config.origins?.length ? config.origins : true }));
   app.use("/api/contributions", contributionRoutes(model, database.storage || database.client?.storage));
   app.use(express.json({ limit: "32kb" }));
+  app.use("/api", accountRoutes(database, config));
   app.get("/api/health", async (req, res) => {
     await model.genres();
     res.json({

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { THEME } from "../constants/theme";
 import { Icon } from "../components/common/Icon";
@@ -17,7 +17,25 @@ export function ProfileScreen({
   handleScroll,
   contentTopPadding,
   contentBottomPadding,
+  user,
+  onLogout,
+  loggingOut = false,
+  syncStatus = "",
 }) {
+  const [logoutError, setLogoutError] = useState("");
+  const displayName = (typeof user?.user_metadata?.name === "string" && user.user_metadata.name.trim())
+    || user?.email?.split("@")[0]
+    || "Akun CineShelf";
+  const initial = Array.from(displayName)[0].toUpperCase();
+  const logout = async () => {
+    setLogoutError("");
+    try {
+      const success = await onLogout();
+      if (success === false) setLogoutError("Belum dapat keluar. Periksa koneksi dan coba lagi.");
+    } catch (error) {
+      setLogoutError(error.message || "Belum dapat keluar. Coba lagi.");
+    }
+  };
   return (
     <ScrollView
       ref={profileScrollRef}
@@ -32,16 +50,12 @@ export function ProfileScreen({
         },
       ]}
     >
-      {/* User Card with Dither Matrix Texture */}
       <View style={s.profileCardBox}>
-        
-        
-
         <View style={s.profileAvatarLarge}>
-          <Text style={s.profileAvatarLargeText}>R</Text>
+          <Text style={s.profileAvatarLargeText}>{initial}</Text>
         </View>
-        <Text style={s.profileUserName}>Muhammad Reka Fakhrezi</Text>
-        <Text style={s.profileUserSub}>21120124140146 · Kelompok 33</Text>
+        <Text style={s.profileUserName}>{displayName}</Text>
+        <Text style={s.profileUserSub}>{user?.email}</Text>
 
         {/* 4-Item Stats Grid */}
         <View style={s.profileStatsContainer}>
@@ -68,6 +82,21 @@ export function ProfileScreen({
             <Text style={s.profileStatVal}>{totalTitles}</Text>
             <Text style={s.profileStatLabel}>Katalog</Text>
           </View>
+        </View>
+        {!!syncStatus && (
+          <Text style={s.syncStatus} accessibilityLiveRegion="polite">{syncStatus}</Text>
+        )}
+        {!!logoutError && (
+          <Text style={s.logoutError} accessibilityRole="alert">{logoutError}</Text>
+        )}
+        <View style={s.logoutButton}>
+          <Button
+            label={loggingOut ? "Sedang keluar…" : "Keluar dari akun"}
+            icon="log-out-outline"
+            secondary
+            disabled={loggingOut}
+            onPress={logout}
+          />
         </View>
       </View>
 
@@ -164,12 +193,32 @@ const s = StyleSheet.create({
     color: "white",
     fontSize: 19,
     fontWeight: "800",
+    textAlign: "center",
   },
   profileUserSub: {
     color: THEME.textMuted,
     fontSize: 13,
     lineHeight: 20,
     marginTop: 6,
+    textAlign: "center",
+  },
+  syncStatus: {
+    color: THEME.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: "center",
+    marginTop: 18,
+  },
+  logoutError: {
+    color: THEME.accentSoft,
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: "center",
+    marginTop: 12,
+  },
+  logoutButton: {
+    width: "100%",
+    marginTop: 16,
   },
   profileStatsContainer: {
     flexDirection: "row",
