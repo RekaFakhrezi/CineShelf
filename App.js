@@ -5,6 +5,7 @@ import {
   StatusBar,
   Text,
   ActivityIndicator,
+  Modal,
   BackHandler,
   useWindowDimensions,
   Animated,
@@ -61,7 +62,7 @@ import { ListScreen } from "./src/screens/ListScreen";
 import { DetailScreen } from "./src/screens/DetailScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 
-function CineShelf({ connection, openSettings: showSettings, auth }) {
+function CineShelf({ connection, openSettings: showSettings, auth, onRequestLogin }) {
   const reducedMotion = useReducedMotion();
   const inset = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -77,13 +78,17 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
   const [page, setPage] = useState(1);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const account = useLibrary(connection.url, auth.getToken);
+  const signedIn = !!auth.session;
+  const account = useLibrary(connection.url, auth.getToken, signedIn);
   const { saved, shelves, watchedList, userRatings, userReactions } = account.library;
   const ready = account.ready;
-  const updateField = (field, value) => account.setLibrary(previous => ({
-    ...previous,
-    [field]: typeof value === "function" ? value(previous[field]) : value,
-  }));
+  const updateField = (field, value) => {
+    if (!signedIn || !ready) return;
+    account.setLibrary(previous => ({
+      ...previous,
+      [field]: typeof value === "function" ? value(previous[field]) : value,
+    }));
+  };
   const setSaved = value => updateField("saved", value);
   const setShelves = value => updateField("shelves", value);
   const setWatchedList = value => updateField("watchedList", value);
@@ -93,6 +98,18 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
   const [createShelfModal, setCreateShelfModal] = useState(false);
   const [addToShelfItem, setAddToShelfItem] = useState(null);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  function canEditLibrary() {
+    if (!signedIn) {
+      onRequestLogin();
+      return false;
+    }
+    return ready;
+  }
+
+  function openCreateShelf() {
+    if (canEditLibrary()) setCreateShelfModal(true);
+  }
 
   // CineRoulette / Mood State
   const [rouletteModal, setRouletteModal] = useState(false);
@@ -226,6 +243,7 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
 
   // Shelves helper functions
   const handleCreateShelf = (name, icon) => {
+    if (!canEditLibrary()) return;
     const newShelf = {
       id: `shelf_${Date.now()}`,
       name,
@@ -242,6 +260,7 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
   };
 
   const handleDeleteShelf = (shelfId) => {
+    if (!canEditLibrary()) return;
     setShelves((prev) => prev.filter((s) => s.id !== shelfId));
     if (activeShelfId === shelfId) {
       setActiveShelfId("all");
@@ -252,24 +271,10 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
     });
   };
 
-  const handleToggleItemInShelf = (shelfId, itemId) => {
-    setShelves((prev) =>
-      prev.map((shelf) => {
-        if (shelf.id !== shelfId) return shelf;
-        const currentItems = shelf.items || [];
-        const exists = currentItems.includes(itemId);
-        return {
-          ...shelf,
-          items: exists
-            ? currentItems.filter((id) => id !== itemId)
-            : [...currentItems, itemId],
-        };
-      }),
-    );
-  };
 
   // Watched & Rating helpers
   const handleToggleWatched = (itemId) => {
+    if (!canEditLibrary()) return;
     setWatchedList((prev) => {
       const exists = prev.includes(itemId);
       const updated = exists
@@ -286,6 +291,7 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
   };
 
   const handleRate = (itemId, stars) => {
+    if (!canEditLibrary()) return;
     setUserRatings((prev) => ({
       ...prev,
       [itemId]: prev[itemId] === stars ? 0 : stars,
@@ -293,10 +299,13 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
   };
 
   const handleReact = (itemId, emoji) => {
-    setUserReactions((prev) => ({
-      ...prev,
-      [itemId]: emoji,
-    }));
+    if (!canEditLibrary()) return;
+    setUserReactions((prev) => {
+      const next = { ...prev };
+      if (emoji) next[itemId] = emoji;
+      else delete next[itemId];
+      return next;
+    });
   };
 
   const handleSelectMood = (mood) => {
@@ -341,11 +350,12 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
   }
 
   function toggle(item) {
-    if (!ready) return;
+    if (!canEditLibrary()) return;
     setAddToShelfItem(item);
   }
 
   const handleApplyShelves = (item, selectedShelfIds, inWatchlist) => {
+    if (!canEditLibrary()) return;
     const shouldSave = inWatchlist || selectedShelfIds.length > 0;
 
     setSaved((prev) => {
@@ -392,6 +402,7 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
   };
 
   const handleRemoveFromWatchlist = (item) => {
+    if (!canEditLibrary()) return;
     setSaved((prev) => prev.filter((id) => id !== item.id));
     setShelves((prev) =>
       prev.map((shelf) => {
@@ -423,7 +434,7 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
   const savedRequest = useRequest(
     (signal) => api.resolve(allSavedIds, signal),
     [connection.url, JSON.stringify(allSavedIds)],
-    ready && isApi && tab === "watchlist",
+    signedIn && ready && isApi && tab === "watchlist",
   );
 
   const detailRequest = useRequest(
@@ -598,7 +609,7 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
                 handleScroll={handleScroll}
                 contentTopPadding={contentTopPadding}
                 contentBottomPadding={contentBottomPadding}
-                onOpenAddToShelf={(item) => setAddToShelfItem(item)}
+                onOpenAddToShelf={toggle}
                 watchedList={watchedList}
                 onToggleWatched={handleToggleWatched}
                 userRatings={userRatings}
@@ -646,10 +657,11 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
           ) : tab === "profile" ? (
             <ProfileScreen
               profileScrollRef={profileScrollRef}
-              user={auth.session.user}
+              user={auth.session?.user}
+              onLogin={onRequestLogin}
               onLogout={logout}
               loggingOut={loggingOut}
-              syncStatus={account.saving ? "Menyimpan perubahan…" : account.error ? "Perubahan belum tersimpan" : "Tersimpan di akun"}
+              syncStatus={!signedIn ? "" : account.saving ? "Menyimpan perubahan…" : account.error ? "Perubahan belum tersimpan" : "Tersimpan di akun"}
               savedCount={saved.length}
               totalTitles={home?.total ?? catalog.length}
               watchedCount={watchedList.length}
@@ -661,6 +673,13 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
               contentTopPadding={contentTopPadding}
               contentBottomPadding={contentBottomPadding}
             />
+          ) : tab === "watchlist" && !signedIn ? (
+            <View style={[s.accountLoading, { flex: 1, paddingTop: contentTopPadding, paddingBottom: contentBottomPadding }]}>
+              <Icon name="bookmark-outline" size={40} color={THEME.accentSoft} />
+              <Text style={s.guestTitle}>Watchlist khusus akunmu</Text>
+              <Text style={s.accountMessage}>Masuk atau buat akun untuk menyimpan film dan menyusun rak pribadi.</Text>
+              <Button label="Masuk / Daftar" icon="log-in-outline" onPress={onRequestLogin} />
+            </View>
           ) : (
             <ListScreen
               listScrollRef={listScrollRef}
@@ -692,7 +711,7 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
               shelves={shelves}
               activeShelfId={activeShelfId}
               onSelectShelf={setActiveShelfId}
-              onOpenCreateShelf={() => setCreateShelfModal(true)}
+              onOpenCreateShelf={openCreateShelf}
               shelfCounts={shelfCounts}
               onDeleteShelf={handleDeleteShelf}
             />
@@ -769,7 +788,7 @@ function CineShelf({ connection, openSettings: showSettings, auth }) {
         onClose={() => setAddToShelfItem(null)}
         onApplyShelves={handleApplyShelves}
         onRemoveFromWatchlist={handleRemoveFromWatchlist}
-        onOpenCreateShelf={() => setCreateShelfModal(true)}
+        onOpenCreateShelf={openCreateShelf}
       />
     </View>
   );
@@ -781,7 +800,12 @@ function AccountGate() {
   const [urlDraft, setUrlDraft] = useState("");
   const [connectionError, setConnectionError] = useState("");
   const [checking, setChecking] = useState(false);
+  const [loginVisible, setLoginVisible] = useState(false);
   const auth = useAuth(connection.url, connectionReady);
+
+  useEffect(() => {
+    if (auth.session) setLoginVisible(false);
+  }, [auth.session]);
 
   useEffect(() => {
     let active = true;
@@ -808,9 +832,9 @@ function AccountGate() {
     setConnectionError("");
     try {
       const url = normalizeApiUrl(urlDraft || connection.url);
-      const result = await createApi(url).health();
-      if (result.status !== "ok" || result.service !== "cineshelf-api") {
-        throw Error("URL ini bukan CineShelf API.");
+      if (mode === "api") {
+        const result = await createApi(url).health();
+        if (result.status !== "ok" || result.service !== "cineshelf-api") throw Error("URL ini bukan CineShelf API.");
       }
       const next = { mode, url };
       await AsyncStorage.setItem(STORAGE_KEYS.CONNECTION, JSON.stringify(next));
@@ -828,10 +852,15 @@ function AccountGate() {
     {!connectionReady || !auth.ready ? <View style={[s.rootContainer, s.accountLoading]}>
       <ActivityIndicator color={THEME.accentSoft} />
       <Text style={s.accountMessage}>Membuka CineShelf…</Text>
-    </View> : auth.session ? <CineShelf
-      key={`${connection.url}:${auth.session.user.id}`}
+    </View> : <CineShelf
+      key={`${connection.url}:${auth.session?.user.id || "guest"}`}
       connection={connection} openSettings={openSettings} auth={auth}
-    /> : <AuthScreen auth={auth} openSettings={openSettings} />}
+      onRequestLogin={() => setLoginVisible(true)}
+    />}
+    <Modal visible={loginVisible && !auth.session} animationType="slide"
+      onRequestClose={() => { if (!auth.busy) setLoginVisible(false); }}>
+      <AuthScreen auth={auth} openSettings={openSettings} onClose={() => setLoginVisible(false)} />
+    </Modal>
     <SettingsModal visible={settings} onClose={() => setSettings(false)}
       checking={checking} urlDraft={urlDraft} setUrlDraft={setUrlDraft}
       connectionError={connectionError} onSaveConnection={saveConnection} />
@@ -850,6 +879,7 @@ export default function App() {
 const s = StyleSheet.create({
   accountLoading: { justifyContent: "center", alignItems: "center", gap: 16, padding: 24 },
   accountMessage: { color: THEME.textSecondary, fontSize: 14, lineHeight: 21, textAlign: "center" },
+  guestTitle: { color: THEME.textPrimary, fontSize: 22, fontWeight: "800", textAlign: "center" },
   syncBanner: { position: "absolute", alignSelf: "center", maxWidth: 480, backgroundColor: THEME.bgElevated, borderColor: THEME.accentSoft, borderWidth: 1, borderRadius: 12, padding: 14, marginHorizontal: 16, zIndex: 200 },
   addButtonFrame: { position: "absolute", left: 0, right: 0, width: "100%", maxWidth: 1040, alignSelf: "center", zIndex: 80 },
   addButton: { width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center", backgroundColor: THEME.accent, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", ...THEME.raisedShadow },

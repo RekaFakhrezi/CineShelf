@@ -18,14 +18,16 @@ export function ProfileScreen({
   contentTopPadding,
   contentBottomPadding,
   user,
+  onLogin,
   onLogout,
   loggingOut = false,
   syncStatus = "",
 }) {
   const [logoutError, setLogoutError] = useState("");
-  const displayName = (typeof user?.user_metadata?.name === "string" && user.user_metadata.name.trim())
-    || user?.email?.split("@")[0]
-    || "Akun CineShelf";
+  const displayName = user
+    ? (typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim())
+      || user.email?.split("@")[0] || "Akun CineShelf"
+    : "Guest";
   const initial = Array.from(displayName)[0].toUpperCase();
   const logout = async () => {
     setLogoutError("");
@@ -55,7 +57,7 @@ export function ProfileScreen({
           <Text style={s.profileAvatarLargeText}>{initial}</Text>
         </View>
         <Text style={s.profileUserName}>{displayName}</Text>
-        <Text style={s.profileUserSub}>{user?.email}</Text>
+        <Text style={s.profileUserSub}>{user ? user.email : "Belum login. Masuk untuk menyimpan watchlist dan rakmu."}</Text>
 
         {/* 4-Item Stats Grid */}
         <View style={s.profileStatsContainer}>
@@ -91,11 +93,11 @@ export function ProfileScreen({
         )}
         <View style={s.logoutButton}>
           <Button
-            label={loggingOut ? "Sedang keluar…" : "Keluar dari akun"}
-            icon="log-out-outline"
-            secondary
+            label={user ? loggingOut ? "Sedang keluar…" : "Keluar dari akun" : "Masuk / Daftar"}
+            icon={user ? "log-out-outline" : "log-in-outline"}
+            secondary={!!user}
             disabled={loggingOut}
-            onPress={logout}
+            onPress={user ? logout : onLogin}
           />
         </View>
       </View>

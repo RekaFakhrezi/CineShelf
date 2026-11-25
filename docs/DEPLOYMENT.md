@@ -16,21 +16,28 @@ Untuk project baru maupun yang katalog/storage-nya sudah aktif:
 1. Jalankan seluruh **backend/database/accounts.supabase.sql** di **SQL Editor**.
    File membuat `user_libraries`, foreign key ke `auth.users`, dan RLS pemilik.
    Aman dijalankan ulang; tidak menghapus katalog atau data akun.
-2. Di **Authentication → Sign In / Providers**, pastikan **Email** aktif.
-   Biarkan konfirmasi email aktif untuk penggunaan nyata. Saat mendaftar,
-   pengguna membuka tautan konfirmasi lalu kembali ke aplikasi untuk masuk.
-   Tidak perlu memasukkan akun atau kata sandi lewat SQL.
-3. Atur **Authentication → URL Configuration → Site URL** ke alamat frontend
-   web yang dipakai (atau `http://localhost:8083` bila menjalankan Expo di port
-   tersebut). Aplikasi mobile masuk manual setelah konfirmasi email; tidak
-   bergantung pada deep link konfirmasi.
+2. Di **Authentication → Sign In / Providers → Email**, pastikan
+   **Enable Email provider** aktif dan matikan **Confirm email**, lalu **Save**.
+   Dengan pengaturan ini, daftar langsung menghasilkan sesi login tanpa
+   membuka email. Tidak perlu SQL untuk membuat atau mengonfirmasi akun.
+   Konsekuensi: kepemilikan alamat email tidak diverifikasi. Pengaturan Auth
+   harus diubah lewat dashboard/Management API, bukan service-role Data API key.
+3. Bila Confirm email masih aktif, Supabase tetap meminta konfirmasi; aplikasi
+   tidak memalsukan sesi atau melewati kebijakan Auth memakai admin key.
 4. Restart backend lokal atau redeploy backend Vercel, lalu jalankan/redeploy
    frontend dari source yang sama. Environment tetap `DB_DRIVER=supabase`,
    `SUPABASE_URL`, dan `SUPABASE_SERVICE_ROLE_KEY`; tidak ada key baru di frontend.
 
-Uji dengan dua email: akun A menambah film dan rak, keluar, akun B harus kosong;
-masuk lagi sebagai A harus mengembalikan koleksinya. Status ditonton, rating,
-dan reaksi ikut dipisahkan. Katalog dan kontribusi judul tetap bersama.
+Aplikasi pertama kali membuka katalog sebagai **guest**, bukan layar login.
+Profil guest menampilkan **Masuk / Daftar**; menekan simpan/watchlist meminta
+login. Guest tidak mengirim permintaan library, tidak menyimpan rak/watchlist,
+dan tidak bisa memberi rating, reaksi atau status ditonton. Login dapat dibatalkan
+melalui **Kembali ke katalog** tanpa kehilangan posisi jelajah.
+
+Uji dengan dua email: akun A menambah film dan rak, keluar kembali menjadi guest,
+akun B harus kosong; masuk lagi sebagai A harus mengembalikan koleksinya.
+Status ditonton, rating, dan reaksi ikut dipisahkan. Katalog dan kontribusi
+judul tetap bersama. Sesi yang masih aktif dipulihkan pada pembukaan berikutnya.
 Data AsyncStorage lama tanpa pemilik tidak diimpor otomatis ke akun pertama.
 Perubahan disimpan online, dengan pesan gagal dan tombol **Simpan ulang**;
 keluar akun menunggu penyimpanan berhasil. Pada dua perangkat yang mengedit akun

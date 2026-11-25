@@ -12,9 +12,9 @@ export function emptyLibrary() {
 }
 
 // Mounted once per API + account. No shared-device library is imported into an account.
-export function useLibrary(base, getToken) {
+export function useLibrary(base, getToken, enabled = true) {
   const [library, setLibrary] = useState(emptyLibrary);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(!enabled);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -25,6 +25,7 @@ export function useLibrary(base, getToken) {
   current.current = library;
 
   useEffect(() => {
+    if (!enabled) return;
     const request = new AbortController();
     controller.current = request;
     let active = true;
@@ -44,9 +45,10 @@ export function useLibrary(base, getToken) {
       }
     })();
     return () => { active = false; request.abort(); };
-  }, [base, getToken, revision]);
+  }, [base, getToken, revision, enabled]);
 
   const flush = useCallback(() => {
+    if (!enabled) return Promise.resolve();
     if (pending.current) return pending.current;
     if (!persisted.current) return Promise.reject(Error("Rak akun belum selesai dimuat."));
     const signal = controller.current.signal;
@@ -69,11 +71,11 @@ export function useLibrary(base, getToken) {
       if (!signal.aborted) setSaving(false);
     });
     return pending.current;
-  }, [base, getToken]);
+  }, [base, getToken, enabled]);
 
   useEffect(() => {
-    if (ready && library !== persisted.current) flush().catch(() => {});
-  }, [library, ready, flush]);
+    if (enabled && ready && library !== persisted.current) flush().catch(() => {});
+  }, [library, ready, flush, enabled]);
 
   const retry = () => ready ? flush().catch(() => {}) : setRevision(value => value + 1);
   return { library, setLibrary, ready, error, saving, retry, flush };

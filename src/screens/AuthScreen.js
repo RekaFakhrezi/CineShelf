@@ -8,7 +8,7 @@ import { Button } from "../components/common/Button";
 import { Icon } from "../components/common/Icon";
 import { THEME } from "../constants/theme";
 
-export function AuthScreen({ auth, openSettings }) {
+export function AuthScreen({ auth, openSettings, onClose }) {
   const [signup, setSignup] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,6 +56,10 @@ export function AuthScreen({ auth, openSettings }) {
           paddingRight: insets.right + 24,
         }]}
       >
+        <View style={{ alignSelf: "flex-start", marginBottom: 16 }}>
+          <Button label="Kembali ke katalog" icon="arrow-back-outline" ghost
+            disabled={auth.busy} onPress={onClose} />
+        </View>
         <View style={[s.layout, wide && s.wideLayout]}>
           <View style={[s.intro, wide && s.wideIntro]}>
             <View style={s.brand}>

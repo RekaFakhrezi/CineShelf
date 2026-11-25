@@ -5,6 +5,9 @@ Aplikasi katalog film dan serial untuk Tugas Akhir Praktikum PPB. Tampilan gelap
 Versi 0.2.0 menambahkan REST API Express, database, dan integrasi fetch.
 Login email/kata sandi memakai Supabase Auth. Watchlist, rak, status ditonton,
 rating dan reaksi tersimpan terpisah per akun; katalog tetap dipakai bersama.
+Aplikasi dibuka sebagai guest: katalog, pencarian dan detail bebas dijelajahi.
+Simpan watchlist/rak dan jurnal pribadi meminta login; Profil menyediakan
+**Masuk / Daftar** untuk guest dan **Keluar dari akun** setelah login.
 
 ## Jalankan pertama kali (laptop + HP)
 
@@ -44,10 +47,10 @@ Untuk pratinjau browser laptop, jalankan `npm run web`.
 
 ### 3. Sambungkan aplikasi ke backend
 
-Aplikasi mencoba mendeteksi IP laptop dari Metro. Pada layar masuk, tekan
-**Atur koneksi API**, masukkan URL yang dicetak backend, lalu tekan
-**Uji & Hubungkan ke API**. Buat akun, konfirmasi email bila diminta, lalu masuk.
-Menu koneksi juga tersedia di Profil.
+Aplikasi mencoba mendeteksi IP laptop dari Metro. Buka **Profil → Ganti Sumber /
+Sambungkan API**, masukkan URL yang dicetak backend, lalu tekan
+**Uji & Hubungkan ke API**. Guest bisa menjelajah tanpa akun. Untuk menyimpan
+watchlist, pilih **Masuk / Daftar** di Profil atau tekan tombol simpan film.
 URL tersimpan pada perangkat; tidak perlu mengubah source setiap kali IP berganti.
 
 Alternatif: isi `EXPO_PUBLIC_API_URL` pada `.env` root mengikuti `.env.example`,
@@ -64,7 +67,8 @@ memblokir. Tunnel Expo hanya membantu koneksi Metro, bukan otomatis backend.
   memakai web service sendiri. Loading, error, retry, dan pembatalan request
   disediakan. Tidak ada fallback otomatis ke data contoh ketika API gagal.
 - **Demo:** dipilih sendiri melalui Sumber katalog → Gunakan Katalog Demo.
-  Memakai `catalog.js` lokal, tetapi login dan penyimpanan rak tetap online.
+  Memakai `catalog.js` lokal dan dapat dijelajahi guest tanpa backend.
+  Login dan penyimpanan rak tetap membutuhkan koneksi Supabase.
   Mode ini diberi label dan bukan bukti integrasi API katalog.
 - Data pribadi tersimpan di Supabase berdasarkan identitas akun yang diverifikasi
   backend. Sesi dipertahankan di perangkat melalui AsyncStorage; kata sandi tidak
@@ -92,8 +96,9 @@ SUPABASE_URL=https://PROJECT_KAMU.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=ISI_DI_FILE_LOKAL_SENDIRI
 ```
 
-4. Aktifkan provider Email di Supabase Authentication, lalu jalankan `npm start`
-   dari folder backend. Katalog sudah diisi SQL; `npm run seed` tidak wajib.
+4. Aktifkan provider Email di Supabase Authentication dan matikan **Confirm email**
+   agar pendaftaran langsung membuka sesi. Lalu jalankan `npm start` dari folder
+   backend. Katalog sudah diisi SQL; `npm run seed` tidak wajib.
 5. Pastikan `/api/health` menunjukkan `database: "supabase"` dan uji list/detail.
 
 Seed tidak menimpa ID yang sudah ada. Service-role key hanya dipakai backend;

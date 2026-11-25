@@ -157,6 +157,17 @@ test("signup konfirmasi email tidak membuat sesi palsu", async t => {
   assert.equal(stored.has(key), false);
 });
 
+test("signup tanpa konfirmasi langsung membuka dan menyimpan sesi akun", async t => {
+  setup(t, async () => response({ data: session("signup") }));
+  const auth = await mount(t);
+  await act(async () => {
+    assert.equal(await auth.state.signup("akun@example.com", "password", "Akun"), true);
+  });
+  assert.equal(auth.state.session.user.id, "user-A");
+  assert.equal(await auth.state.getToken(), "signup");
+  assert.equal(JSON.parse(stored.get(key)).refresh_token, "refresh-signup");
+});
+
 test("pergantian API dan unmount menolak hasil refresh lama", async t => {
   const pending = deferred();
   setup(t, async () => pending.promise);
