@@ -61,16 +61,16 @@ test("API katalog: baca, filter, paginasi, detail, CRUD, validasi dan authorizat
   );
   await t.test("dua list dan home berasal dari database", async () => {
     for (const [route, count] of [
-      ["movies", 6],
+      ["movies", 18],
       ["series", 4],
     ]) {
       const r = await f.request("/api/" + route);
       const j = await r.json();
       assert.equal(j.pagination.total, count);
-      assert.equal(j.data.length, count);
+      assert.equal(j.data.length, Math.min(count, 12));
     }
     const j = await (await f.request("/api/home")).json();
-    assert.equal(j.data.total, 10);
+    assert.equal(j.data.total, 22);
     assert.equal(j.data.featured.id, "f1");
   });
   await t.test("pencarian, genre, paginasi, kosong", async () => {
@@ -78,7 +78,7 @@ test("API katalog: baca, filter, paginasi, detail, CRUD, validasi dan authorizat
     assert.equal(j.data[0].id, "f1");
     j = await (await f.request("/api/movies?limit=2&page=2")).json();
     assert.equal(j.data.length, 2);
-    assert.equal(j.pagination.totalPages, 3);
+    assert.equal(j.pagination.totalPages, 9);
     j = await (await f.request("/api/movies?q=notfound")).json();
     assert.equal(j.data.length, 0);
   });

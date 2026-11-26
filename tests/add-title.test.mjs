@@ -24,8 +24,8 @@ test('add title form validates, sends picked cover, handles serials and prevents
     if(name.endsWith('/Button'))return {Button:'Button'};
     throw Error(name);
   },module,module.exports);
-  let tree,resolve,received,created=0,calls=0;
-  await act(async()=>{tree=create(React.createElement(module.exports.AddTitleModal,{visible:true,genres:['Drama','Sci-Fi'],api:{contribute:body=>{received=body;calls++;return new Promise(r=>{resolve=r})}},onCreated:()=>created++}));});
+  let tree,resolve,received,receivedToken,created=0,calls=0;
+  await act(async()=>{tree=create(React.createElement(module.exports.AddTitleModal,{visible:true,genres:['Drama','Sci-Fi'],getToken:async()=>'account-access-token',api:{contribute:(body,token)=>{received=body;receivedToken=token;calls++;return new Promise(r=>{resolve=r})}},onCreated:()=>created++}));});
   const save=()=>tree.root.findByType('Button').props.onPress();
   await act(async()=>{await save();});
   assert.ok(tree.root.findAllByType('Text').some(x=>x.props.children==='Pilih foto cover terlebih dahulu.'));
@@ -39,6 +39,7 @@ test('add title form validates, sends picked cover, handles serials and prevents
   let submission;
   await act(async()=>{submission=save();save();});
   assert.equal(calls,1);assert.equal(received.type,'serial');assert.equal(received.title.episodes,6);
+  assert.equal(receivedToken,'account-access-token');
   assert.equal(received.title.duration,'1 musim · 6 episode');assert.equal(received.cover.base64,'aW1hZ2U=');
   assert.equal(received.title.cast,'Belum dicantumkan');assert.equal('adminKey' in received,false);
   await act(async()=>{resolve({data:{id:'new'}});await submission;});assert.equal(created,1);

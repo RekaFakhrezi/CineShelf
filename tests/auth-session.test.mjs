@@ -188,3 +188,50 @@ test("pergantian API dan unmount menolak hasil refresh lama", async t => {
   await act(async () => unmounted.resolve(response({ data: session("after-unmount") })));
   assert.equal(stored.get(key), original);
 });
+
+test("edit profil memakai token akun dan menyimpan user baru tanpa password atau URL foto sementara", async t => {
+  const initial = session();
+  const user = { ...initial.user, user_metadata: { name: "Nama Baru" } };
+  const data = { user, avatarUrl: "https://example.com/avatar?token=sementara" };
+  const message = "Periksa email untuk konfirmasi perubahan.";
+  const changes = { name: "Nama Baru", email: "baru@example.com", password: "password-baru" };
+  setup(t, async (url, options) => {
+    if (url.endsWith("/auth/refresh")) return response({ data: initial });
+    assert.equal(url, `${base}/profile`);
+    assert.equal(options.token, "access");
+    if (options.method === "PATCH") {
+      assert.deepEqual(JSON.parse(options.body), changes);
+      return response({ data, message });
+    }
+    return response({ data: { user: initial.user, avatarUrl: null } });
+  });
+  stored.set(key, JSON.stringify(initial));
+  const auth = await mount(t);
+  assert.deepEqual(await auth.state.getProfile(), { user: initial.user, avatarUrl: null });
+  await act(async () => {
+    assert.deepEqual(await auth.state.updateProfile(changes), { data, message });
+  });
+  assert.deepEqual(auth.state.session, { ...initial, user });
+  assert.deepEqual(JSON.parse(stored.get(key)), { ...initial, user });
+});
+
+test("pergantian API membuang hasil edit profil yang terlambat", async t => {
+  const initial = session();
+  const started = deferred();
+  const pending = deferred();
+  setup(t, async url => {
+    if (url.endsWith("/auth/refresh")) return response({ data: initial });
+    started.resolve();
+    return pending.promise;
+  });
+  stored.set(key, JSON.stringify(initial));
+  const auth = await mount(t);
+  const saving = auth.state.updateProfile({ name: "Nama Terlambat" });
+  const rejected = assert.rejects(saving, /Sesi tidak lagi aktif/);
+  await started.promise;
+  await auth.change("https://another.example/api");
+  pending.resolve(response({ data: { user: { ...initial.user, user_metadata: { name: "Nama Terlambat" } } } }));
+  await rejected;
+  assert.equal(auth.state.session, null);
+  assert.deepEqual(JSON.parse(stored.get(key)), initial);
+});

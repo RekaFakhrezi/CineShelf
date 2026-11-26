@@ -5,9 +5,9 @@
 1. Buka project Supabase milik sendiri. Gunakan Project URL dari dashboard, bukan alamat project lama yang tidak aktif.
 2. Buka **SQL Editor → New query**.
 3. Salin seluruh isi **backend/database/setup-and-seed.supabase.sql**, lalu Run.
-4. Pada project kosong hasil akhir harus menunjukkan **film = 6** dan **serial = 4**. Tabel genres dan titles akan muncul di Table Editor.
+4. Pada project kosong hasil akhir harus menunjukkan **film = 18** dan **serial = 4**. Tabel genres dan titles akan muncul di Table Editor.
 
-File SQL sudah memuat schema, foreign key, index, RLS dan 10 judul fiktif. Boleh dijalankan ulang: ID yang sudah ada tidak diubah atau dihapus. File ini tidak berisi key. Jangan mematikan RLS atau memberi akses write publik.
+File SQL sudah memuat schema, foreign key, index, RLS dan 22 judul fiktif. Boleh dijalankan ulang: ID yang sudah ada tidak diubah atau dihapus. File ini tidak berisi key. Jangan mematikan RLS atau memberi akses write publik.
 
 ### Login dan rak per akun
 
@@ -43,6 +43,14 @@ Perubahan disimpan online, dengan pesan gagal dan tombol **Simpan ulang**;
 keluar akun menunggu penyimpanan berhasil. Pada dua perangkat yang mengedit akun
 sama bersamaan, penyimpanan terakhir menjadi isi rak akun.
 
+Di **Profil → Edit profil**, akun dapat mengganti nama, foto, email, dan kata
+sandi. Foto menggunakan bucket private `cineshelf-covers` yang sama dengan fitur
+kontribusi; jika belum ada, siapkan `backend/database/storage.supabase.sql`.
+Tidak perlu tabel atau environment variable baru. Uji link konfirmasi perubahan
+email Supabase Auth dan atur Site URL ke alamat frontend yang benar. Saat email
+masih menunggu konfirmasi, masuk dengan email lama. Deploy frontend dan backend
+dari commit yang sama untuk mengaktifkan editor.
+
 Jika muncul **Perpustakaan belum tersedia**, pastikan SQL akun dijalankan pada
 project yang sama dengan `SUPABASE_URL` backend. Secret key Data API tidak
 memberi akses DDL/SQL Editor; bila tidak tersedia koneksi PostgreSQL atau akses
@@ -66,6 +74,15 @@ Project URL tersedia pada Connect/pengaturan Data API. Dari Settings → API Key
 Jangan menaruh service_role key atau ADMIN_API_KEY di app.json, catalog.js, SQL, EXPO_PUBLIC_*, source frontend, atau GitHub. Jangan mengirimkannya lewat screenshot. .env sudah diabaikan Git.
 
 SQL sudah mengisi data, sehingga npm run seed tidak wajib. Untuk memeriksa dari root project:
+
+Untuk menambahkan 12 film contoh baru (`f7`–`f18`) ke project yang sudah ada,
+pastikan `backend/.env` memakai `DB_DRIVER=supabase` dan kredensial project yang
+benar, lalu dari root jalankan `npm --prefix backend run seed`. Seeder membaca
+`backend/database/seed.json` dan melewati ID yang sudah ada tanpa menimpa
+perubahan katalog atau menyentuh koleksi akun. Alternatif tanpa terminal:
+jalankan ulang `backend/database/setup-and-seed.supabase.sql` di SQL Editor.
+Muat ulang aplikasi dalam mode API untuk melihat katalog terbaru; tidak perlu
+rebuild frontend atau mengubah mode demo lokal.
 
 ```powershell
 npm run api

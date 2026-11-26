@@ -8,7 +8,7 @@ import { Icon } from "../common/Icon";
 import { Button } from "../common/Button";
 import { ScalePressable } from "../common/ScalePressable";
 
-export function AddTitleModal({ visible, initialType = "film", genres = [], api, onClose, onCreated }) {
+export function AddTitleModal({ visible, initialType = "film", genres = [], api, getToken, onClose, onCreated }) {
   const [form, setForm] = useState({});
   const [cover, setCover] = useState(null);
   const [error, setError] = useState("");
@@ -54,7 +54,7 @@ export function AddTitleModal({ visible, initialType = "film", genres = [], api,
         cast: form.cast.trim() || "Belum dicantumkan", director: form.director.trim() || "Belum dicantumkan", tagline: form.tagline.trim(),
         ...(form.type === "serial" ? { episodes } : {}),
       };
-      const result = await api.contribute({ type: form.type, title, cover: { base64: cover.base64 } });
+      const result = await api.contribute({ type: form.type, title, cover: { base64: cover.base64 } }, await getToken());
       onCreated(result.data);
     } catch (e) { showError(e.message); }
     finally { lock.current = false; setBusy(false); }

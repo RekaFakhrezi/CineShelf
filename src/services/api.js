@@ -73,7 +73,7 @@ export async function apiRequest(
 export const endpointFor = (type) => (type === "serial" ? "series" : "movies");
 export function createApi(base) {
   return {
-    contribute: (body, signal) => apiRequest(base, "/contributions", { signal, method: "POST", body, timeout: 60000 }),
+    contribute: (body, token, signal) => apiRequest(base, "/contributions", { signal, method: "POST", body, token, timeout: 60000 }),
     health: (signal) => apiRequest(base, "/health", { signal }),
     home: (signal) => apiRequest(base, "/home", { signal }),
     genres: (signal) => apiRequest(base, "/genres", { signal }),

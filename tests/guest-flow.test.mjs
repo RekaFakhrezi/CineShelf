@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const { transformSync } = require("@babel/core");
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-function appWithAuth(auth) {
+function appWithAuth(auth, mode = "demo") {
   class Value {
     setValue() {}
     stopAnimation() {}
@@ -33,7 +33,7 @@ function appWithAuth(auth) {
     if (name === "react-native") return native;
     if (name === "react-native-safe-area-context") return { SafeAreaProvider: "SafeAreaProvider", useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) };
     if (name === "@react-native-async-storage/async-storage") return {
-      getItem: async () => JSON.stringify({ mode: "demo", url: "https://example.com/api" }), setItem: async () => {},
+      getItem: async () => JSON.stringify({ mode, url: "https://example.com/api" }), setItem: async () => {},
     };
     if (name.endsWith("/useReducedMotion")) return { MotionProvider: "MotionProvider", useReducedMotion: () => true };
     if (name.endsWith("/theme")) return { THEME: {}, STORAGE_KEYS: { CONNECTION: "connection" } };
@@ -108,4 +108,26 @@ test("guest dapat menjelajah, tetapi aksi pribadi meminta login tanpa mengubah k
   await navigate("profile");
   assert.equal(tree.root.findByType("ProfileScreen").props.savedCount, 0);
   assert.equal(tree.root.findByType("ProfileScreen").props.watchedCount, 0);
+});
+
+test("tambah judul meminta login untuk guest dan membuka form setelah masuk", async t => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ data: null }) });
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const auth = { ready: true, session: null, getToken: async () => "account-A" };
+  const App = appWithAuth(auth, "api");
+  let tree;
+  await act(async () => { tree = create(React.createElement(App)); });
+  t.after(async () => { await act(async () => tree.unmount()); });
+  const add = () => tree.root.findByProps({ accessibilityLabel: "Tambah film atau serial" }).props.onPress();
+  await act(async () => add());
+  assert.equal(tree.root.findByType("Modal").props.visible, true);
+  assert.equal(tree.root.findByType("AddTitleModal").props.visible, false);
+  await act(async () => tree.root.findByType("AuthScreen").props.onClose());
+  assert.equal(tree.root.findByType("AddTitleModal").props.visible, false);
+  auth.session = { user: { id: "account-A", email: "a@example.com" } };
+  await act(async () => tree.update(React.createElement(App)));
+  await act(async () => add());
+  assert.equal(tree.root.findByType("Modal").props.visible, false);
+  assert.equal(tree.root.findByType("AddTitleModal").props.visible, true);
 });

@@ -77,8 +77,9 @@ memblokir. Tunnel Expo hanya membantu koneksi Metro, bukan otomatis backend.
   pemilik. Perubahan yang gagal tersimpan ditandai dan dapat dicoba ulang.
   Keluar akun menunggu penyimpanan selesai. Tidak ada fitur streaming.
 
-Data seed berisi 6 film dan 4 serial fiktif; judul, rating, pemeran, dan episode
-adalah contoh. Foto ilustrasi dari Unsplash, bukan poster resmi film.
+Data seed backend berisi 18 film dan 4 serial fiktif; judul, rating, pemeran, dan
+episode adalah contoh. Foto ilustrasi dari Unsplash, bukan poster resmi film.
+Mode demo lokal tetap berisi 6 film dan 4 serial.
 
 ## Supabase — mengikuti Modul 1
 

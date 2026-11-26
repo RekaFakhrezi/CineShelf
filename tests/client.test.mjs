@@ -21,7 +21,7 @@ test("client mobile mengonsumsi backend nyata, termasuk detail dan pencarian", a
   const base = `http://127.0.0.1:${server.address().port}`,
     api = createApi(base);
   assert.equal((await api.health()).service, "cineshelf-api");
-  assert.equal((await api.home()).data.total, 10);
+  assert.equal((await api.home()).data.total, 22);
   assert.ok((await api.genres()).data.includes("Sci-Fi"));
   const list = await api.list("film", { q: "orbit", genre: "Sci-Fi" });
   assert.equal(list.data.length, 1);

@@ -4,7 +4,7 @@
 
 Pada Beranda, Film, Serial, atau Watchlist dalam mode API, tekan tombol + melayang di kanan bawah, di atas navigasi. Pilih Film atau Serial, pilih foto, lalu isi judul, genre, tahun rilis, durasi/jumlah episode, dan sinopsis. Pemeran, sutradara, tagline, rating awal, dan batas usia tersedia pada Detail tambahan.
 
-Tekan Simpan ke katalog. Setelah berhasil, aplikasi membuka detail judul yang baru disimpan dan memuat ulang katalog. Judul masuk ke katalog bersama; belum ada akun atau kepemilikan per pengguna. Pengguna dapat menambah tanpa ADMIN_API_KEY. Edit/hapus melalui endpoint admin yang sudah ada tetap memerlukan key backend. Fitur form ini hanya menambahkan judul.
+Tekan Simpan ke katalog setelah masuk dengan akun terverifikasi. Tamu diminta masuk terlebih dahulu. Setelah berhasil, aplikasi membuka detail judul yang baru disimpan dan memuat ulang katalog. Judul masuk ke katalog bersama, bukan koleksi pribadi atau milik pengguna tertentu; membaca katalog tetap publik. Pengguna tidak memerlukan ADMIN_API_KEY, tetapi wajib mengirim sesi akun yang valid. Edit/hapus melalui endpoint admin yang sudah ada tetap memerlukan key backend. Fitur form ini hanya menambahkan judul.
 
 Foto mendukung JPG, PNG, dan WebP maksimal 2 MB. Pemeriksaan format, ukuran, dan metadata dilakukan lagi oleh backend. Submit dikunci saat pengiriman agar klik ganda tidak mengirim dua permintaan bersamaan. Jika gagal, form tetap menyimpan isian agar dapat diperbaiki atau dicoba lagi.
 
@@ -12,7 +12,7 @@ Foto mendukung JPG, PNG, dan WebP maksimal 2 MB. Pemeriksaan format, ukuran, dan
 
 Bucket cineshelf-covers sudah dibuat pada project Supabase yang terhubung ke backend/.env dan telah diverifikasi private. Tidak ada secret key pada frontend. Tidak diperlukan environment variable tambahan untuk bucket ini.
 
-Alurnya: aplikasi → POST /api/contributions → backend mengunggah foto → database titles menyimpan judul dan lokasi cover. Jika database gagal setelah upload, backend mencoba menghapus foto yang baru diunggah. Saat daftar/detail dibaca, backend membuat signed URL untuk foto private dengan masa berlaku satu jam. Memuat ulang katalog/detail memperbarui URL; URL lama dapat kedaluwarsa bila aplikasi dibiarkan terbuka lebih dari satu jam.
+Alurnya: aplikasi → POST /api/contributions dengan Authorization: Bearer ACCESS_TOKEN → backend memverifikasi sesi ke Supabase Auth sebelum membaca data kontribusi atau mengunggah foto → database titles menyimpan judul dan lokasi cover. Token tidak ada, tidak valid, atau kedaluwarsa menghasilkan 401; layanan verifikasi gagal menghasilkan 503. Admin key saja bukan sesi pengguna. Kontribusi tidak memerlukan tabel atau kesiapan koleksi pribadi. Jika database gagal setelah upload, backend mencoba menghapus foto yang baru diunggah. Saat daftar/detail dibaca, backend membuat signed URL untuk foto private dengan masa berlaku satu jam. Memuat ulang katalog/detail memperbarui URL; URL lama dapat kedaluwarsa bila aplikasi dibiarkan terbuka lebih dari satu jam.
 
 Untuk project Supabase baru, jalankan backend/database/storage.supabase.sql melalui SQL Editor, atau dari root project:
 
@@ -48,7 +48,7 @@ Uji browser 393×852 menunjukkan tinggi hero 579.359375 px dan posisi atas indik
 - Bundle web dan Android berhasil. Form dan tombol melayang diperiksa di browser ukuran HP.
 - Alat browser otomatis macet saat memasukkan file lokal ke pemilih foto. Uji form memakai pemilih terkontrol, sedangkan file asli diuji langsung melalui API; pemilihan galeri sampai simpan pada HP fisik belum diverifikasi.
 
-Endpoint tambah ini terbuka untuk katalog bersama. Batas percobaan saat ini lima permintaan per alamat koneksi per 10 menit pada setiap proses backend, bukan limiter terpusat antar-instance Vercel. Autentikasi, moderasi, serta pembatasan terpusat menjadi pengembangan berikutnya jika aplikasi dipakai lebih luas.
+Endpoint tambah memerlukan sesi akun yang valid untuk katalog bersama. Batas percobaan tetap lima permintaan per alamat koneksi per 10 menit pada setiap proses backend, bukan limiter terpusat antar-instance Vercel. Moderasi serta pembatasan terpusat menjadi pengembangan berikutnya jika aplikasi dipakai lebih luas.
 
 ## Rollback
 

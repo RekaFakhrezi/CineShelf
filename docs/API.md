@@ -20,10 +20,13 @@ Semua respons JSON, kecuali DELETE berhasil (204 tanpa body).
 | PUT | /series/:id | Ganti seluruh field serial | Admin |
 | DELETE | /series/:id | Hapus serial | Admin |
 | POST | /catalog/resolve | Ambil judul dari array `ids`; tidak mengubah data | Publik |
+| POST | /contributions | Tambah film/serial bersama dan unggah cover | Akun |
 | POST | /auth/signup | Daftar (`email`, `password`, `name`) | Publik |
 | POST | /auth/login | Masuk (`email`, `password`) | Publik |
 | POST | /auth/refresh | Perbarui sesi (`refresh_token`) | Publik |
 | POST | /auth/logout | Cabut sesi perangkat aktif | Akun |
+| GET | /profile | Muat profil akun dan URL foto sementara | Akun |
+| PATCH | /profile | Ubah nama, email, kata sandi, atau foto akun | Akun |
 | GET | /library | Muat koleksi akun; `data: null` bila belum ada | Akun |
 | PUT | /library | Simpan seluruh koleksi akun | Akun |
 
@@ -56,6 +59,21 @@ SQLite menyimpan judul di tabel `titles` dengan payload JSON dan foreign key ke
 Kode status: 200 baca/update, 201 create, 204 delete, 400 validasi, 401 admin key
 salah, 404 endpoint/judul tidak ada, 413 body terlalu besar, 500 kegagalan database,
 503 operasi tulis atau konfigurasi deployment belum siap.
+
+## Kontribusi katalog bersama
+
+POST `/contributions` memakai `Authorization: Bearer ACCESS_TOKEN` akun Supabase,
+bukan `ADMIN_API_KEY`. Token diverifikasi sebelum parsing JSON, upload, atau penulisan
+judul. Token hilang/tidak valid/kedaluwarsa menghasilkan 401; kegagalan layanan
+verifikasi menghasilkan 503. Tidak memerlukan kesiapan tabel `/library` atau
+kepemilikan pengguna. Katalog dan cover melalui endpoint baca tetap publik.
+
+Body JSON maksimal 3 MiB: `{ "type": "film", "title": { ... }, "cover": { "base64": "..." } }`.
+`type` menerima `film`/`serial`; field `title` mengikuti validasi judul di atas,
+tetapi URL gambar ditentukan backend dari cover JPG/PNG/WebP maksimal 2 MiB.
+Respons berhasil 201 berisi judul bersama. Upload dibersihkan jika penulisan judul
+gagal. Batas lima percobaan per alamat koneksi per 10 menit per proses tetap berlaku
+(429); endpoint admin dan akses baca publik tidak berubah.
 
 ## Akun dan koleksi pribadi
 
@@ -94,3 +112,15 @@ karakter; rating 0–5. Rak `all` wajib ada, `isDefault` hanya benar untuk rak i
 Validasi gagal menghasilkan 400; sesi tidak valid 401; batas percobaan Supabase
 429; layanan akun atau tabel belum siap 503. PUT mengganti snapshot koleksi
 akun, bukan menggabungkan edit bersamaan dari beberapa perangkat.
+
+## Edit profil
+
+`GET /profile` dan `PATCH /profile` memakai token akun yang sama seperti `/library`.
+Keduanya mengembalikan `{"data":{"user":{...},"avatarUrl":null}}`; foto yang ada
+menghasilkan URL bertanda tangan dengan masa berlaku satu jam. Respons tidak di-cache.
+
+`PATCH` menerima hanya field yang diubah: `name` (1–80 karakter), `email`,
+`password` (minimal 6 karakter), atau `avatar` (`{"base64":"..."}` untuk foto
+JPG/PNG/WebP maksimal 2 MiB, `null` untuk hapus). Identitas akun berasal dari token,
+bukan body. Email login mengikuti konfirmasi Supabase Auth; bila masih menunggu,
+respons menyertakan `message` dan `user.email` tetap memakai alamat aktif.

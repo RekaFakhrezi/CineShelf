@@ -90,3 +90,15 @@ test('sqlite keeps catalogue available and explains Supabase account prerequisit
     const response = await request(path, { method }); assert.equal(response.status, 503); assert.match(await response.text(), /DB_DRIVER=supabase/);
   }
 });
+test('account token verification reports service outages without leaking upstream errors', async t => {
+  const fixture = stub();
+  const app = express();
+  app.use('/api', accountRoutes(fixture.database, { authClientFactory: () => ({ auth: {
+    getUser: async () => ({ data: null, error: { status: 503, message: 'SECRET' } }),
+  } }) }));
+  app.use(errorHandler);
+  const request = await serve(app, t);
+  const response = await request('/api/library', { token: 'A' });
+  assert.equal(response.status, 503); assert.doesNotMatch(await response.text(), /SECRET/);
+  assert.equal(fixture.writes.length, 0);
+});

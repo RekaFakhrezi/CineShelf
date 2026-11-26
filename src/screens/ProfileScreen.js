@@ -1,9 +1,75 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { THEME } from "../constants/theme";
 import { Icon } from "../components/common/Icon";
 import { Button } from "../components/common/Button";
+import { ProfileAvatar, ProfileEditorModal } from "../components/profile/ProfileEditorModal";
 import appConfig from "../../app.json";
+
+function ProfileIdentity({ user, getProfile, updateProfile, loggingOut }) {
+  const [profile, setProfile] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [message, setMessage] = useState("");
+  const revision = useRef(0);
+
+  useEffect(() => {
+    if (!getProfile) return;
+    let active = true;
+    const startRevision = revision.current;
+    const isCurrent = () => active && startRevision === revision.current;
+    async function load() {
+      try {
+        const result = await getProfile();
+        if (isCurrent()) {
+          setProfile(result);
+          setLoadError(false);
+        }
+      } catch {
+        if (isCurrent()) setLoadError(true);
+      }
+    }
+    load();
+    return () => { active = false; };
+  }, [getProfile]);
+
+  const current = profile?.user ?? user;
+  const name = current
+    ? (typeof current.user_metadata?.name === "string" && current.user_metadata.name.trim())
+      || current.email?.split("@")[0] || "Akun CineShelf"
+    : "Guest";
+  const onSaved = ({ data, message: notice }) => {
+    revision.current += 1;
+    setProfile(data);
+    setLoadError(false);
+    setMessage(notice || "Profil diperbarui.");
+    setEditing(false);
+  };
+
+  return (
+    <>
+      <ProfileAvatar name={name} uri={profile?.avatarUrl} />
+      <Text style={s.profileUserName}>{name}</Text>
+      <Text style={s.profileUserSub}>{current ? current.email : "Belum login. Masuk untuk menyimpan watchlist dan rakmu."}</Text>
+      {user && (
+        <View style={s.editProfile}>
+          <Button label="Edit profil" icon="create-outline" size="sm" secondary disabled={loggingOut} onPress={() => setEditing(true)} />
+        </View>
+      )}
+      {!!message && <Text style={s.syncStatus} accessibilityLiveRegion="polite">{message}</Text>}
+      {loadError && <Text style={s.logoutError} accessibilityRole="alert">Profil terbaru belum dapat dimuat. Kamu masih dapat mengedit profil.</Text>}
+      {user && editing && (
+        <ProfileEditorModal
+          user={current}
+          avatarUrl={profile?.avatarUrl}
+          updateProfile={updateProfile}
+          onSaved={onSaved}
+          onClose={() => setEditing(false)}
+        />
+      )}
+    </>
+  );
+}
 
 export function ProfileScreen({
   profileScrollRef,
@@ -18,17 +84,14 @@ export function ProfileScreen({
   contentTopPadding,
   contentBottomPadding,
   user,
+  getProfile,
+  updateProfile,
   onLogin,
   onLogout,
   loggingOut = false,
   syncStatus = "",
 }) {
   const [logoutError, setLogoutError] = useState("");
-  const displayName = user
-    ? (typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim())
-      || user.email?.split("@")[0] || "Akun CineShelf"
-    : "Guest";
-  const initial = Array.from(displayName)[0].toUpperCase();
   const logout = async () => {
     setLogoutError("");
     try {
@@ -53,11 +116,13 @@ export function ProfileScreen({
       ]}
     >
       <View style={s.profileCardBox}>
-        <View style={s.profileAvatarLarge}>
-          <Text style={s.profileAvatarLargeText}>{initial}</Text>
-        </View>
-        <Text style={s.profileUserName}>{displayName}</Text>
-        <Text style={s.profileUserSub}>{user ? user.email : "Belum login. Masuk untuk menyimpan watchlist dan rakmu."}</Text>
+        <ProfileIdentity
+          key={`${connectionUrl}:${user?.id ?? "guest"}`}
+          user={user}
+          getProfile={user ? getProfile : null}
+          updateProfile={updateProfile}
+          loggingOut={loggingOut}
+        />
 
         {/* 4-Item Stats Grid */}
         <View style={s.profileStatsContainer}>
@@ -175,25 +240,13 @@ const s = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
   },
-  profileAvatarLarge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: THEME.accentDark,
-    borderColor: THEME.accent,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  profileAvatarLargeText: {
-    color: "white",
-    fontSize: 30,
-    fontWeight: "700",
+  editProfile: {
+    marginTop: 10,
   },
   profileUserName: {
     color: "white",
     fontSize: 19,
+    marginTop: 12,
     fontWeight: "800",
     textAlign: "center",
   },

@@ -658,6 +658,8 @@ function CineShelf({ connection, openSettings: showSettings, auth, onRequestLogi
             <ProfileScreen
               profileScrollRef={profileScrollRef}
               user={auth.session?.user}
+              getProfile={auth.getProfile}
+              updateProfile={auth.updateProfile}
               onLogin={onRequestLogin}
               onLogout={logout}
               loggingOut={loggingOut}
@@ -724,13 +726,13 @@ function CineShelf({ connection, openSettings: showSettings, auth, onRequestLogi
       </View>}
 
       {isApi && !detail && tab !== "profile" && <View pointerEvents="box-none" style={[s.addButtonFrame, { bottom: Math.max(inset.bottom, 14) + 82 }]}>
-        <ScalePressable onPress={() => setAddingTitle(true)} accessibilityLabel="Tambah film atau serial"
+        <ScalePressable onPress={() => { if (signedIn) setAddingTitle(true); else onRequestLogin(); }} accessibilityLabel="Tambah film atau serial"
           containerStyle={{ alignSelf: "flex-end", marginRight: 20 }} style={s.addButton}>
           <Icon name="add" size={27} color="white" />
         </ScalePressable>
       </View>}
-      <AddTitleModal visible={addingTitle} initialType={tab === "serial" ? "serial" : "film"}
-        genres={genres.filter(value => value !== "Semua")} api={api} onClose={() => setAddingTitle(false)}
+      <AddTitleModal visible={signedIn && addingTitle} initialType={tab === "serial" ? "serial" : "film"}
+        genres={genres.filter(value => value !== "Semua")} api={api} getToken={auth.getToken} onClose={() => setAddingTitle(false)}
         onCreated={item => {
           setAddingTitle(false); setCatalogRevision(value => value + 1); handleOpenDetail(item);
           setNotice({ text: "Judul berhasil ditambahkan ke katalog", type: "save" });

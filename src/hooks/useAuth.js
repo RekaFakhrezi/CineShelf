@@ -61,11 +61,14 @@ export function useAuth(base, enabled = true) {
         });
         if (!current(scope, version)) return null;
         if (!validSession(response.data)) throw Error("Sesi dari server tidak valid. Coba masuk kembali.");
-        scope.session = response.data;
-        await persist(response.data, version);
+        const session = scope.session.user === stored.user
+          ? response.data
+          : { ...response.data, user: scope.session.user };
+        scope.session = session;
+        await persist(session, version);
         if (!current(scope, version)) return null;
-        publish({ session: response.data, error: "", message: "" });
-        return response.data.access_token;
+        publish({ session: scope.session, error: "", message: "" });
+        return session.access_token;
       } catch (error) {
         if (!current(scope, version)) return null;
         if (error.status === 401) {
@@ -165,6 +168,43 @@ export function useAuth(base, enabled = true) {
     return scope.session.access_token;
   }, [scope, refresh]);
 
+  const getProfile = useCallback(async () => {
+    const version = scope.version;
+    const token = await getToken();
+    if (!current(scope, version)) throw Error("Sesi tidak lagi aktif.");
+    const { data } = await apiRequest(scope.url, "/profile", {
+      token, signal: scope.controller.signal,
+    });
+    if (!current(scope, version) || !scope.session || data?.user?.id !== scope.session.user.id)
+      throw Error("Sesi tidak lagi aktif.");
+    return data;
+  }, [scope, getToken]);
+
+  const updateProfile = useCallback(async (patch) => {
+    if (!scope.active || !scope.session) throw Error("Silakan masuk terlebih dahulu.");
+    if (scope.operation) throw Error("Tunggu proses akun selesai, lalu coba lagi.");
+    scope.operation = true;
+    const version = scope.version;
+    try {
+      const token = await getToken();
+      if (!current(scope, version)) throw Error("Sesi tidak lagi aktif.");
+      const response = await apiRequest(scope.url, "/profile", {
+        method: "PATCH", body: patch, token, signal: scope.controller.signal,
+        timeout: patch.avatar ? 60000 : 12000,
+      });
+      if (!current(scope, version) || !scope.session || response.data?.user?.id !== scope.session.user.id)
+        throw Error("Sesi tidak lagi aktif.");
+      const session = { ...scope.session, user: response.data.user };
+      scope.session = session;
+      await persist(session, version);
+      if (!current(scope, version)) throw Error("Sesi tidak lagi aktif.");
+      publish({ session: scope.session });
+      return response;
+    } finally {
+      if (current(scope, version)) scope.operation = false;
+    }
+  }, [scope, getToken, persist, publish]);
+
   const logout = useCallback(async () => {
     if (!scope.active || scope.operation) return false;
     scope.operation = true;
@@ -221,7 +261,7 @@ export function useAuth(base, enabled = true) {
     message: visible.message,
     login: (email, password) => authenticate("/auth/login", email, password),
     signup: (email, password, name) => authenticate("/auth/signup", email, password, name),
-    logout, getToken,
+    logout, getToken, getProfile, updateProfile,
     retry: scope.session ? retry : undefined,
   };
 }
